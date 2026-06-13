@@ -47,6 +47,8 @@ namespace evw::gamefiles
         uint32_t nameHash = 0;
 
         void readBase(ResourceDataReader& r);
+        // For use as a referenced block (shader texture parameters).
+        void read(ResourceDataReader& r) { readBase(r); }
     };
 
     // A single texture (144 bytes, legacy).

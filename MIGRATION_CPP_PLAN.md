@@ -35,10 +35,10 @@
 
 ### Этап 1 — Математика (замена SharpDX.Mathematics)
 - [x] Vector2 / Vector3 / Vector4
-- [x] Matrix (4x4)
+- [x] Matrix (4x4) + умножение / transformPoint / translation / scaling
+- [x] Камера: perspectiveFovRH / lookAtRH (для 3D-вьюпорта) — проверено
 - [~] Quaternion
 - [ ] BoundingBox / BoundingSphere / Ray / Plane
-- [ ] Полный набор операций (transform, intersect и т.д.)
 
 ### Этап 2 — Фундамент Core/Utils
 - [x] Jenkins hash (`Jenk.cs` → `jenk.h/.cpp`)
@@ -74,18 +74,35 @@
 - [ ] GameFile / GameFileCache
 
 ### Этап 5 — Мета-типы
-- [ ] Meta / MetaTypes / MetaNames / MetaXml / MetaBuilder
-- [ ] Pso / PsoTypes / PsoBuilder
-- [ ] Rbf / XmlMeta / XmlPso / XmlRbf
+- [x] Meta (RSC структурированные метаданные: StructureInfos / EnumInfos / DataBlocks + root) — проверено
+- [x] MetaTypes (типизированное чтение значений/массивов по схеме указателей блок+смещение) — проверено
+- [ ] MetaNames (известные хеши имён структур/полей)
+- [x] Pso (PSIN/PMAP секции, data-map, root) — проверено
+- [ ] PsoSchema (PSCH) + типизированное чтение значений PSO
+- [x] Rbf (бинарный XML: дерево узлов structure/uint/bool/float/float3/string) — проверено
+- [ ] XmlMeta / XmlPso / XmlRbf (экспорт в XML)
 
 ### Этап 6 — Форматы файлов (FileTypes/*)
 - [x] Ytd (текстуры): TextureDictionary / Texture / TextureData (legacy/non-gen9) — проверено
+- [x] Ybn (коллизии): Bounds + BoundComposite (дерево) + BoundGeometry (квантованные вершины) — проверено
+- [x] Ywr (waypoint record) / Yvr (vehicle record) — список записей; Ywr проверено
+- [x] Gxt2 (глобальный текст: hash→строка) — проверено
+- [x] Heightmap (.dat: размеры/bbox/min-max высоты, RLE) — проверено
+- [x] Определение типа файла по расширению (`gamefile`, ~30 типов) — проверено
+- [x] RBF → XML экспорт (`rbf_xml`) — проверено
+- [x] Ymap (карты мира): CMapData / CEntityDef через Meta + массив указателей — проверено
+- [x] Ytyp (архетипы): CMapTypes / CBaseArchetypeDef — связь entity→архетип→drawable/texture — проверено
 - [ ] gen9-вариант текстур (Enhanced)
 - [~] Модели: Ydr/Ydd/Yft (Drawable/Fragment)
   - [x] Геометрия: VertexDeclaration / VertexBuffer / IndexBuffer (legacy) — проверено
+  - [x] Декодирование вершин: типы/смещения компонентов + извлечение позиций/нормалей/UV/цветов — проверено
   - [x] DrawableGeometry / DrawableModel (сборка сеток: VB+IB+shaderId+AABB) — проверено
-  - [ ] ShaderGroup / Skeleton / Drawable / Fragment (Ydr/Yft верхний уровень)
-- [ ] Карты: Ymap/Ytyp
+  - [x] ShaderGroup / ShaderFX (материалы + встроенный TextureDictionary) — проверено
+  - [x] DrawableBase / Drawable (Ydr: ShaderGroup + LOD-списки моделей High/Med/Low/VLow) — проверено
+  - [x] Skeleton (кости: трансформации + parent/child индексы; теги отложены) — проверено
+  - [x] ShaderParametersBlock (параметры материала: текстуры + Vector4 + хеши) — проверено
+  - [x] Ydd (DrawableDictionary: хеши + массив Drawable) — проверено
+  - [ ] Joints / Bounds (коллизия); Yft (Fragment)- [ ] Карты: Ymap/Ytyp
 - [ ] Остальные ~35 форматов
 
 ### Этап 6.5 — Приложение
@@ -95,9 +112,33 @@
 - [ ] Абстракция устройства Direct3D 11
 - [ ] Шейдеры, Renderable, Renderer
 
-### Этап 8 — UI
-- [ ] Выбор фреймворка (Qt / ImGui)
-- [ ] Перенос форм поверх готового ядра
+### Этап 8 — UI (ImGui)
+- [x] Выбор фреймворка: **Dear ImGui + Win32 + Direct3D 11** (как у CodeWalker — DX11,
+      HLSL-шейдеры переиспользуемы; ImGui-бэкенды `imgui_impl_win32` + `imgui_impl_dx11`)
+- [x] UI-agnostic модель эксплорера в ядре (`ExplorerModel`: scan/search/openFile) — проверено
+- [x] ImGui RPF-эксплорер (`evw_gui`): поиск, список записей, типизированный превью — собирается
+- [x] 3D-вьюпорт: D3D11 offscreen-рендер Drawable (HLSL VS/PS, орбитальная камера, освещение)
+      → показ в ImGui как ImTextureID(SRV); вращение мышью, зум колесом — собирается
+- [x] Текстурирование моделей: декод YTD-текстур (DXT→RGBA) → D3D11 SRV, привязка к мешам
+      по материалу (ShaderParametersBlock); UV-семплинг в шейдере — собирается
+- [ ] Перенос настоящих HLSL-шейдеров CodeWalker (вместо упрощённого)
+- [ ] Полный набор экранов CodeWalker (карта мира, редакторы)
+
+### Сборка GUI
+
+```cmd
+cd cpp
+cmake -S . -B build-gui -DEVW_BUILD_GUI=ON
+cmake --build build-gui --config Debug --target evw_gui
+build-gui\Debug\evw_gui.exe "C:\путь\к\GTA V"
+```
+GUI тянет только Dear ImGui (FetchContent); d3d11/dxgi/d3dcompiler — из Windows SDK.
+Основная сборка (`build.cmd`) GUI не требует — он за опцией `EVW_BUILD_GUI` (по умолчанию OFF).
+
+### Почему DirectX 11, а не OpenGL
+CodeWalker рендерит на D3D11 (SharpDX), шейдеры — HLSL (папка `Shaders/`). DX11 позволяет
+переиспользовать пайплайн и шейдеры почти как есть; OpenGL потребовал бы переписывания в GLSL.
+Цель — Windows (оригинал Windows-only), кроссплатформенность не нужна. ImGui имеет родной DX11-бэкенд.
 
 ## Текущий прогресс (обновляется по ходу)
 
@@ -132,7 +173,44 @@
   - **геометрия моделей** (`geometry`): VertexDeclaration / VertexBuffer / IndexBuffer (legacy) —
     проверено на синтетическом ресурсе (stride, count, declaration, вершинные байты, индексы);
   - **сетки моделей** (`model`): DrawableGeometry / DrawableModel — сборка геометрий
-    (VB+IB+shaderId+AABB), проверено на синтетической модели с одной геометрией.
+    (VB+IB+shaderId+AABB), проверено на синтетической модели с одной геометрией;
+  - **материалы** (`shader`): ShaderGroup / ShaderFX (+ встроенный TextureDictionary), проверено;
+  - **Ydr-уровень** (`drawable`): DrawableBase / Drawable — ShaderGroup + LOD-списки моделей
+    (High/Med/Low/VLow) + bounding, проверено на синтетическом drawable;
+  - **скелет** (`Skeleton`): трансформации костей (матрицы) + parent/child индексы;
+  - **параметры материалов** (`ShaderParametersBlock`): текстуры (ссылки на TextureBase) +
+    Vector4-параметры + хеши имён — связывает шейдер с его текстурами, проверено;
+  - **Ydd** (`DrawableDictionary`): словарь drawable по хешам имён, проверено;
+  - **мета-контейнер** (`Meta`): RSC структурированные метаданные — определения структур
+    (с записями полей), enum'ы, data-блоки + корневой блок; поиск структуры по хешу,
+    проверено на синтетическом meta (структура+enum+data block+name);
+  - **мета-чтение** (`metatypes`): типизированное чтение значений/массивов из data-блоков
+    по схеме указателей (индекс блока + смещение), проверено (массив, смещение, единичное, по имени);
+  - **Ymap** (`ymap`): CMapData / CEntityDef — размещение объектов мира через Meta + массив
+    указателей на сущности (проверено на синтетическом ymap с двумя entity);
+  - **Ytyp** (`ytyp`): CMapTypes / CBaseArchetypeDef — определения архетипов (drawable/texture
+    словари по имени объекта), замыкает связь entity→архетип→модель, проверено;
+  - **модель эксплорера** (`ExplorerModel`): scan папки, поиск, типизированный openFile
+    (YTD/YDR/YDD/binary), проверено на временном `.rpf`;
+  - **ImGui-фронтенд** (`evw_gui`): RPF-эксплорер на **Dear ImGui + Win32 + Direct3D 11**
+    (бэкенды imgui_impl_win32/imgui_impl_dx11) — как у CodeWalker; собирается в `evw_gui.exe`;
+  - **математика камеры**: умножение матриц, transformPoint, perspectiveFovRH/lookAtRH (проверено);
+  - **сборка рендер-сеток** (`render_mesh`): из Drawable/Model → меши (позиции/нормали/UV/индексы +
+    shaderId + AABB), готовые для загрузки в GPU; проверено;
+  - **3D-вьюпорт** (`gui/viewport`): D3D11 offscreen-рендер Drawable (HLSL VS/PS, depth, орбитальная
+    камера, диффузное освещение), вывод в ImGui как ImTextureID(SRV), вращение мышью/зум; собирается;
+  - **текстурирование** (`buildRenderModel` + viewport): встроенные YTD-текстуры декодируются
+    (DXT→RGBA) и грузятся в D3D11 SRV, привязка к мешам по материалу (ShaderParametersBlock),
+    UV-семплинг в шейдере; собирается;
+  - **коллизии** (`bounds`): базовый заголовок Bounds (тип, box/sphere, material, volume) — проверено;
+  - **PSO** (`pso`): альтернативный мета-контейнер (big-endian секции PSIN/PMAP), data-map записи,
+    root id, детект формата по magic; проверено на синтетическом PSO;
+  - **RBF** (`rbf`): бинарный XML — дерево типизированных узлов (structure/uint/bool/float/float3/
+    string/bytes), рекурсивный парсер; проверено на синтетическом дереве;
+  - **RBF→XML** (`rbf_xml`), **Gxt2** (текст hash→строка), **Heightmap** (.dat), **записи**
+    Ywr/Yvr (`records`), **BoundComposite** (дерево коллизий), **детект типа файла** (`gamefile`),
+    **Quaternion→Matrix** — все собираются, ключевые проверены тестами;
+  - ExplorerModel/openFile расширен превью YBN (коллизии) и GXT2 (текст).
 
 ### Сборка приложения
 

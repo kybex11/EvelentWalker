@@ -1,0 +1,8 @@
+E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/CMakeFiles/evw_core.dir
+E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/CMakeFiles/evw_tests.dir
+E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/CMakeFiles/evw_cli.dir
+E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/CMakeFiles/imgui.dir
+E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/CMakeFiles/evw_gui.dir
+E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/CMakeFiles/RUN_TESTS.dir
+E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/CMakeFiles/ALL_BUILD.dir
+E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/CMakeFiles/ZERO_CHECK.dir

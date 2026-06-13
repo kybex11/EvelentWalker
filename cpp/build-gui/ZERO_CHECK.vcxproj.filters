@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\CMakeFiles\f2b6027ba25f61e3aa1609196577233a\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{C67744ED-A3BB-36CE-BFD4-6FDD775FD829}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

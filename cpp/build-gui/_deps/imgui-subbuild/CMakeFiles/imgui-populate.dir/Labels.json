@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/_deps/imgui-subbuild/CMakeFiles/imgui-populate"
+		},
+		{
+			"file" : "E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/_deps/imgui-subbuild/CMakeFiles/7711397eced7690ae29b757dac420cc8/imgui-populate.rule"
+		},
+		{
+			"file" : "E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/_deps/imgui-subbuild/CMakeFiles/9be593ff8571caa342e41811570d58d1/imgui-populate-complete.rule"
+		},
+		{
+			"file" : "E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/_deps/imgui-subbuild/CMakeFiles/5d330a51262ec2d86bb35817ff0b6304/imgui-populate-build.rule"
+		},
+		{
+			"file" : "E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/_deps/imgui-subbuild/CMakeFiles/5d330a51262ec2d86bb35817ff0b6304/imgui-populate-configure.rule"
+		},
+		{
+			"file" : "E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/_deps/imgui-subbuild/CMakeFiles/5d330a51262ec2d86bb35817ff0b6304/imgui-populate-download.rule"
+		},
+		{
+			"file" : "E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/_deps/imgui-subbuild/CMakeFiles/5d330a51262ec2d86bb35817ff0b6304/imgui-populate-install.rule"
+		},
+		{
+			"file" : "E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/_deps/imgui-subbuild/CMakeFiles/5d330a51262ec2d86bb35817ff0b6304/imgui-populate-mkdir.rule"
+		},
+		{
+			"file" : "E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/_deps/imgui-subbuild/CMakeFiles/5d330a51262ec2d86bb35817ff0b6304/imgui-populate-patch.rule"
+		},
+		{
+			"file" : "E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/_deps/imgui-subbuild/CMakeFiles/5d330a51262ec2d86bb35817ff0b6304/imgui-populate-test.rule"
+		},
+		{
+			"file" : "E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/_deps/imgui-subbuild/CMakeFiles/5d330a51262ec2d86bb35817ff0b6304/imgui-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"imgui-populate"
+		],
+		"name" : "imgui-populate"
+	}
+}

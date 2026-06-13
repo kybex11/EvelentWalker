@@ -104,8 +104,15 @@ namespace evw::gamefiles
         return result;
     }
 
-    std::vector<uint32_t> ResourceDataReader::ReadUintsAt(uint64_t position, uint32_t count)
+    std::vector<int16_t> ResourceDataReader::ReadShortsAt(uint64_t position, uint32_t count)
     {
+        auto bytes = ReadBytesAt(position, count * 2);
+        std::vector<int16_t> result(count);
+        if (!bytes.empty()) std::memcpy(result.data(), bytes.data(), count * 2);
+        return result;
+    }
+
+    std::vector<uint32_t> ResourceDataReader::ReadUintsAt(uint64_t position, uint32_t count)    {
         auto bytes = ReadBytesAt(position, count * 4);
         std::vector<uint32_t> result(count);
         if (!bytes.empty()) std::memcpy(result.data(), bytes.data(), count * 4);

@@ -47,6 +47,7 @@ namespace evw::gamefiles
         // Positioned reads (restore position afterwards), mirroring *At helpers.
         std::vector<uint8_t> ReadBytesAt(uint64_t position, uint32_t count);
         std::vector<uint16_t> ReadUshortsAt(uint64_t position, uint32_t count);
+        std::vector<int16_t> ReadShortsAt(uint64_t position, uint32_t count);
         std::vector<uint32_t> ReadUintsAt(uint64_t position, uint32_t count);
         std::vector<uint64_t> ReadUlongsAt(uint64_t position, uint32_t count);
         std::vector<float> ReadFloatsAt(uint64_t position, uint32_t count);

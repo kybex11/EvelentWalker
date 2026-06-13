@@ -42,8 +42,7 @@ namespace evw::gamefiles
     };
 
     struct DrawableModel
-    {
-        uint64_t geometriesPointer = 0;
+    {        uint64_t geometriesPointer = 0;
         uint16_t geometriesCount = 0;
         uint64_t boundsPointer = 0;
         uint64_t shaderMappingPointer = 0;
@@ -54,6 +53,24 @@ namespace evw::gamefiles
         std::vector<uint64_t> geometryPointers;
         std::vector<AABB_s> boundsData;
         std::vector<std::shared_ptr<DrawableGeometry>> geometries;
+
+        void read(ResourceDataReader& r);
+    };
+
+    // 112-byte skeleton header. Bone tags and the bones block are not parsed yet
+    // (pointers/counts retained); transforms and parent/child indices are read.
+    struct Skeleton
+    {
+        uint64_t boneTagsPointer = 0;
+        uint16_t boneTagsCount = 0;
+        uint64_t bonesPointer = 0;
+        uint16_t bonesCount = 0;
+        uint16_t childIndicesCount = 0;
+
+        std::vector<math::Matrix> transformationsInverted;
+        std::vector<math::Matrix> transformations;
+        std::vector<int16_t> parentIndices;
+        std::vector<int16_t> childIndices;
 
         void read(ResourceDataReader& r);
     };

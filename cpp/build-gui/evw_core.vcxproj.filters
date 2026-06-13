@@ -1,0 +1,100 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\app\explorer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\app\render_mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\aes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\bounds.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\data.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\ddsio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\dotnet_random.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\drawable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\dxt_decode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\gamefile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\geometry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\gtacrypto.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\gxt2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\heightmap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\inflate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\jenk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\meta.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\model.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\pso.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\rbf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\rbf_xml.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\records.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\resource_data.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\rpf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\rpf_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\ymap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\ytyp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{561EF82F-98CA-3219-8B47-3C99C8073BAA}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

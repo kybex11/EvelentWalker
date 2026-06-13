@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\_deps\imgui-subbuild\CMakeFiles\5d330a51262ec2d86bb35817ff0b6304\imgui-populate-mkdir.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\_deps\imgui-subbuild\CMakeFiles\5d330a51262ec2d86bb35817ff0b6304\imgui-populate-download.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\_deps\imgui-subbuild\CMakeFiles\5d330a51262ec2d86bb35817ff0b6304\imgui-populate-update.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\_deps\imgui-subbuild\CMakeFiles\5d330a51262ec2d86bb35817ff0b6304\imgui-populate-patch.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\_deps\imgui-subbuild\CMakeFiles\5d330a51262ec2d86bb35817ff0b6304\imgui-populate-configure.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\_deps\imgui-subbuild\CMakeFiles\5d330a51262ec2d86bb35817ff0b6304\imgui-populate-build.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\_deps\imgui-subbuild\CMakeFiles\5d330a51262ec2d86bb35817ff0b6304\imgui-populate-install.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\_deps\imgui-subbuild\CMakeFiles\5d330a51262ec2d86bb35817ff0b6304\imgui-populate-test.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\_deps\imgui-subbuild\CMakeFiles\9be593ff8571caa342e41811570d58d1\imgui-populate-complete.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\_deps\imgui-subbuild\CMakeFiles\7711397eced7690ae29b757dac420cc8\imgui-populate.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\_deps\imgui-subbuild\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\build-gui\_deps\imgui-subbuild\CMakeFiles\imgui-populate" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{D798EF06-2D85-3B8C-9984-7243CB54B5A6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

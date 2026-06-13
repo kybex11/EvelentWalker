@@ -69,4 +69,36 @@ namespace evw::gamefiles
                                                                                      : boundsData[0];
         }
     }
+
+    void Skeleton::read(ResourceDataReader& r)
+    {
+        r.ReadUInt32();                 // VFT
+        r.ReadUInt32();                 // Unknown_4h
+        r.ReadUInt64();                 // Unknown_8h
+        boneTagsPointer = r.ReadUInt64();
+        r.ReadUInt16();                 // BoneTagsCapacity
+        boneTagsCount = r.ReadUInt16();
+        r.ReadUInt32();                 // Unknown_1Ch
+        bonesPointer = r.ReadUInt64();
+        uint64_t transformsInvPtr = r.ReadUInt64();
+        uint64_t transformsPtr = r.ReadUInt64();
+        uint64_t parentIndicesPtr = r.ReadUInt64();
+        uint64_t childIndicesPtr = r.ReadUInt64();
+        r.ReadUInt64();                 // Unknown_48h
+        r.ReadUInt32();                 // Unknown_50h
+        r.ReadUInt32();                 // Unknown_54h
+        r.ReadUInt32();                 // Unknown_58h
+        r.ReadUInt16();                 // Unknown_5Ch
+        bonesCount = r.ReadUInt16();
+        childIndicesCount = r.ReadUInt16();
+        r.ReadUInt16();                 // Unknown_62h
+        r.ReadUInt32();                 // Unknown_64h
+        r.ReadUInt64();                 // Unknown_68h
+
+        transformationsInverted = r.ReadStructsAt<math::Matrix>(transformsInvPtr, bonesCount);
+        transformations = r.ReadStructsAt<math::Matrix>(transformsPtr, bonesCount);
+        parentIndices = r.ReadShortsAt(parentIndicesPtr, bonesCount);
+        childIndices = r.ReadShortsAt(childIndicesPtr, childIndicesCount);
+        // BoneTags and the bones block are not parsed yet.
+    }
 }

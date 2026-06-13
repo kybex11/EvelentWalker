@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"E:/evelent-core/EvelentWalker/EvelentWalker/cpp/build-gui/_deps/imgui-subbuild/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
