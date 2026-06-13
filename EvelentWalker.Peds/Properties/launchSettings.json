@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "EvelentWalker.Peds": {
+      "commandName": "Project",
+      "workingDirectory": ".."
+    }
+  }
+}

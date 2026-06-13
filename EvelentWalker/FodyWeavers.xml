@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Weavers xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FodyWeavers.xsd">
+  <!-- Embeds all referenced managed assemblies into the output .exe so the
+       application ships as a single self-contained executable (no loose DLLs).
+       Native dependencies and content folders (Shaders, icons) are left alone. -->
+  <Costura DisableCompression="false" DisableCleanup="false" IncludeDebugSymbols="false" />
+</Weavers>

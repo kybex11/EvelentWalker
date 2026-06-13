@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "EvelentWalker.RPFExplorer": {
+      "commandName": "Project",
+      "workingDirectory": ".."
+    }
+  }
+}

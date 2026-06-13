@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "EvelentWalker.Vehicles": {
+      "commandName": "Project",
+      "workingDirectory": ".."
+    }
+  }
+}
