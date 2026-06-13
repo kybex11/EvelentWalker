@@ -14,10 +14,8 @@ bug: editing world-loaded ymaps won't revert changes after closing project
 
 ---[General features]---
 
-
-Упаковщик, бинарник установщик
-
-
+RPF Explorer: Опционально сделать подгрузхку содержимого GTA V, изначально только раннее загруженные архивы
+Rework: WPF to ImGUI
 
 ---[UI stuff]---
 
