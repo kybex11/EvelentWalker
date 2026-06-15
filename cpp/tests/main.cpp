@@ -2591,6 +2591,17 @@ static void testTextureDecodeExtra()
     auto g = evw::texconv::decompressBC4(blk, 4, 4);
     check(g.size() == 64, "BC4 decoded size");
     check(g[0] == 0x80 && g[3] == 255, "BC4 grayscale value + opaque alpha");
+
+    // BC5 (ATI2): two channels (red, green) -> 16-byte block. Constant r=0x80, g=0x40.
+    std::vector<uint8_t> blk5(16, 0);
+    blk5[0] = 0x80; blk5[1] = 0x80;   // red endpoints equal
+    blk5[8] = 0x40; blk5[9] = 0x40;   // green endpoints equal
+    auto rg = evw::texconv::decompressBC5(blk5, 4, 4);
+    check(rg.size() == 64, "BC5 decoded size");
+    check(rg[0] == 0x80 && rg[1] == 0x40 && rg[3] == 255, "BC5 red/green channels + opaque");
+
+    check(isCompressedFormat(TextureFormat::D3DFMT_ATI2), "ATI2 is compressed");
+    check(!isCompressedFormat(TextureFormat::D3DFMT_L8), "L8 is not compressed");
 }
 
 static void testHeightmapPgm()

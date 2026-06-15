@@ -75,7 +75,7 @@ namespace EvelentWalker.Tools
             this.SelTextureMipLabel = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
             this.SelTextureDimensionsLabel = new System.Windows.Forms.Label();
-            this.SelTextureMipTrackBar = new System.Windows.Forms.TrackBar();
+            this.SelTextureMipTrackBar = new EvelentWalker.WinForms.TrackBarFix();
             this.label4 = new System.Windows.Forms.Label();
             this.SelTextureNameTextBox = new System.Windows.Forms.TextBox();
             this.SelTexturePictureBox = new System.Windows.Forms.PictureBox();
@@ -829,7 +829,7 @@ namespace EvelentWalker.Tools
         private System.Windows.Forms.SplitContainer splitContainer2;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label SelTextureDimensionsLabel;
-        private System.Windows.Forms.TrackBar SelTextureMipTrackBar;
+        private EvelentWalker.WinForms.TrackBarFix SelTextureMipTrackBar;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox SelTextureNameTextBox;
         private System.Windows.Forms.PictureBox SelTexturePictureBox;

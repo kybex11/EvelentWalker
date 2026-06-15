@@ -124,6 +124,15 @@ namespace evw::gamefiles
                 w.stringTag(level, tag, readCharArray(meta, ptr));
                 break;
             }
+            case DT::ArrayOfBytes:
+            {
+                metatypes::MetaArray arr = readPod<metatypes::MetaArray>(data, off);
+                w.selfClose(level, tag, "bytes=\"" + std::to_string(arr.count1) + "\"");
+                break;
+            }
+            case DT::DataBlockPointer:
+                w.selfClose(level, tag, "block=\"" + std::to_string(readPod<uint32_t>(data, off) & 0xFFF) + "\"");
+                break;
             case DT::Structure:
             {
                 // Inline structure: recurse at the same block, referenced by index.

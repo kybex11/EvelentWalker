@@ -64,7 +64,7 @@ namespace EvelentWalker.Forms
             this.SelTexturePictureBox = new System.Windows.Forms.PictureBox();
             this.SelTextureMipLabel = new System.Windows.Forms.Label();
             this.SelTextureDimensionsLabel = new System.Windows.Forms.Label();
-            this.SelTextureMipTrackBar = new System.Windows.Forms.TrackBar();
+            this.SelTextureMipTrackBar = new EvelentWalker.WinForms.TrackBarFix();
             this.label4 = new System.Windows.Forms.Label();
             this.DetailsTabPage = new System.Windows.Forms.TabPage();
             this.DetailsPropertyGrid = new EvelentWalker.WinForms.PropertyGridFix();
@@ -575,7 +575,7 @@ namespace EvelentWalker.Forms
         private System.Windows.Forms.TabPage TextureTabPage;
         private System.Windows.Forms.Label SelTextureMipLabel;
         private System.Windows.Forms.Label SelTextureDimensionsLabel;
-        private System.Windows.Forms.TrackBar SelTextureMipTrackBar;
+        private EvelentWalker.WinForms.TrackBarFix SelTextureMipTrackBar;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.PictureBox SelTexturePictureBox;
         private System.Windows.Forms.TabPage DetailsTabPage;

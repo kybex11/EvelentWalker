@@ -51,7 +51,7 @@ namespace EvelentWalker.World
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.SaveTextureButton = new System.Windows.Forms.Button();
             this.SelTextureDimensionsLabel = new System.Windows.Forms.Label();
-            this.SelTextureMipTrackBar = new System.Windows.Forms.TrackBar();
+            this.SelTextureMipTrackBar = new EvelentWalker.WinForms.TrackBarFix();
             this.SelTextureMipLabel = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
@@ -653,7 +653,7 @@ namespace EvelentWalker.World
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabPage3;
         private System.Windows.Forms.TabPage tabPage4;
-        private System.Windows.Forms.TrackBar SelTextureMipTrackBar;
+        private EvelentWalker.WinForms.TrackBarFix SelTextureMipTrackBar;
         private System.Windows.Forms.Label SelTextureMipLabel;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label2;

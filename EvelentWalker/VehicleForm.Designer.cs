@@ -64,7 +64,7 @@ namespace EvelentWalker
             this.SkeletonsCheckBox = new System.Windows.Forms.CheckBox();
             this.TimeOfDayLabel = new System.Windows.Forms.Label();
             this.label19 = new System.Windows.Forms.Label();
-            this.TimeOfDayTrackBar = new System.Windows.Forms.TrackBar();
+            this.TimeOfDayTrackBar = new EvelentWalker.WinForms.TrackBarFix();
             this.ControlLightDirCheckBox = new System.Windows.Forms.CheckBox();
             this.ShowCollisionMeshesCheckBox = new System.Windows.Forms.CheckBox();
             this.GridCheckBox = new System.Windows.Forms.CheckBox();
@@ -879,7 +879,7 @@ namespace EvelentWalker
         private System.Windows.Forms.CheckBox SkeletonsCheckBox;
         private System.Windows.Forms.Label TimeOfDayLabel;
         private System.Windows.Forms.Label label19;
-        private System.Windows.Forms.TrackBar TimeOfDayTrackBar;
+        private EvelentWalker.WinForms.TrackBarFix TimeOfDayTrackBar;
         private System.Windows.Forms.CheckBox ControlLightDirCheckBox;
         private System.Windows.Forms.CheckBox ShowCollisionMeshesCheckBox;
         private System.Windows.Forms.CheckBox GridCheckBox;

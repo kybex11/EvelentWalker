@@ -155,4 +155,20 @@ namespace evw::gamefiles
         default:                             return "UNKNOWN";
         }
     }
+
+    bool isCompressedFormat(TextureFormat format)
+    {
+        switch (format)
+        {
+        case TextureFormat::D3DFMT_DXT1:
+        case TextureFormat::D3DFMT_DXT3:
+        case TextureFormat::D3DFMT_DXT5:
+        case TextureFormat::D3DFMT_ATI1:
+        case TextureFormat::D3DFMT_ATI2:
+        case TextureFormat::D3DFMT_BC7:
+            return true;
+        default:
+            return false;
+        }
+    }
 }

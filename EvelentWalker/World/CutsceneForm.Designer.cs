@@ -36,12 +36,12 @@ namespace EvelentWalker.World
             this.CutsceneTreeView = new System.Windows.Forms.TreeView();
             this.InfoPropertyGrid = new System.Windows.Forms.PropertyGrid();
             this.AnimateCameraCheckBox = new System.Windows.Forms.CheckBox();
-            this.TimeTrackBar = new System.Windows.Forms.TrackBar();
+            this.TimeTrackBar = new EvelentWalker.WinForms.TrackBarFix();
             this.TimeLabel = new System.Windows.Forms.Label();
             this.PlayStopButton = new System.Windows.Forms.Button();
             this.PlaybackTimer = new System.Windows.Forms.Timer(this.components);
             this.VolumeLabel = new System.Windows.Forms.Label();
-            this.VolumeTrackBar = new System.Windows.Forms.TrackBar();
+            this.VolumeTrackBar = new EvelentWalker.WinForms.TrackBarFix();
             this.SubtitlesCheckBox = new System.Windows.Forms.CheckBox();
             this.AudioCheckBox = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
@@ -258,12 +258,12 @@ namespace EvelentWalker.World
         private System.Windows.Forms.TreeView CutsceneTreeView;
         private System.Windows.Forms.PropertyGrid InfoPropertyGrid;
         private System.Windows.Forms.CheckBox AnimateCameraCheckBox;
-        private System.Windows.Forms.TrackBar TimeTrackBar;
+        private EvelentWalker.WinForms.TrackBarFix TimeTrackBar;
         private System.Windows.Forms.Label TimeLabel;
         private System.Windows.Forms.Button PlayStopButton;
         private System.Windows.Forms.Timer PlaybackTimer;
         private System.Windows.Forms.Label VolumeLabel;
-        private System.Windows.Forms.TrackBar VolumeTrackBar;
+        private EvelentWalker.WinForms.TrackBarFix VolumeTrackBar;
         private System.Windows.Forms.CheckBox SubtitlesCheckBox;
         private System.Windows.Forms.CheckBox AudioCheckBox;
     }

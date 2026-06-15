@@ -16,6 +16,8 @@ namespace evw::texconv
     std::vector<uint8_t> decompressDxt5(const std::vector<uint8_t>& data, int width, int height);
     // BC4 / ATI1: single-channel; decoded to grayscale RGBA.
     std::vector<uint8_t> decompressBC4(const std::vector<uint8_t>& data, int width, int height);
+    // BC5 / ATI2: two-channel (red/green); blue reconstructed as a normal map.
+    std::vector<uint8_t> decompressBC5(const std::vector<uint8_t>& data, int width, int height);
 
     // Decodes the top mip of a texture to RGBA8 for supported formats
     // (DXT1/DXT3/DXT5, and 32-bit uncompressed). Returns empty if unsupported.

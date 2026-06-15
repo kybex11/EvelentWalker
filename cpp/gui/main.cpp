@@ -23,8 +23,10 @@
 
 #include "evw/app/explorer.h"
 #include "evw/app/render_mesh.h"
+#include "evw/gamefiles/ddsio.h"
 #include "evw/gamefiles/drawable.h"
 #include "evw/gamefiles/resource_data.h"
+#include "evw/gamefiles/texture.h"
 #include "viewport.h"
 
 // ---- D3D11 device/swapchain state ----
@@ -385,6 +387,18 @@ namespace
                 ImGui::Text("of %zu", g_texList.size());
                 const auto& t = g_texList[g_texIndex];
                 ImGui::Text("%dx%d", t.width, t.height);
+                ImGui::SameLine();
+                if (ImGui::Button("Save DDS"))
+                {
+                    evw::gamefiles::Texture tex;
+                    tex.width = (uint16_t)t.width; tex.height = (uint16_t)t.height;
+                    tex.levels = 1; tex.format = evw::gamefiles::TextureFormat::D3DFMT_A8B8G8R8;
+                    tex.data = std::make_shared<evw::gamefiles::TextureData>();
+                    tex.data->fullData = t.rgba;
+                    std::string out = "texture_" + std::to_string(g_texIndex) + ".dds";
+                    g_status = evw::texconv::writeDDSToFile(tex, out) ? ("Saved " + out)
+                                                                      : "DDS save failed";
+                }
                 if (g_previewTexSRV)
                 {
                     float maxw = ImGui::GetContentRegionAvail().x;

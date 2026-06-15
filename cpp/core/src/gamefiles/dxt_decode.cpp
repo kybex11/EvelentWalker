@@ -1,5 +1,7 @@
 #include "evw/gamefiles/dxt_decode.h"
 
+#include <cmath>
+
 namespace evw::texconv
 {
     using gamefiles::Texture;
@@ -204,6 +206,50 @@ namespace evw::texconv
         return img;
     }
 
+    std::vector<uint8_t> decompressBC5(const std::vector<uint8_t>& data, int width, int height)
+    {
+        std::vector<uint8_t> img(static_cast<size_t>(width) * height * 4, 0);
+        Cursor c{data.data(), data.size()};
+        int bx = (width + 3) / 4, by = (height + 3) / 4;
+
+        auto decodeChannel = [](Cursor& cur, uint8_t out[16]) {
+            uint8_t v0 = cur.u8(), v1 = cur.u8();
+            uint8_t vals[8];
+            vals[0] = v0; vals[1] = v1;
+            if (v0 > v1)
+                for (int i = 1; i < 7; ++i) vals[i + 1] = static_cast<uint8_t>(((7 - i) * v0 + i * v1) / 7);
+            else
+            {
+                for (int i = 1; i < 5; ++i) vals[i + 1] = static_cast<uint8_t>(((5 - i) * v0 + i * v1) / 5);
+                vals[6] = 0; vals[7] = 255;
+            }
+            uint64_t bits = 0;
+            for (int i = 0; i < 6; ++i) bits |= static_cast<uint64_t>(cur.u8()) << (8 * i);
+            for (int i = 0; i < 16; ++i) out[i] = vals[(bits >> (3 * i)) & 0x7];
+        };
+
+        for (int y = 0; y < by; ++y)
+            for (int x = 0; x < bx; ++x)
+            {
+                uint8_t red[16], green[16];
+                decodeChannel(c, red);
+                decodeChannel(c, green);
+                for (int yy = 0; yy < 4; ++yy)
+                    for (int xx = 0; xx < 4; ++xx)
+                    {
+                        int i = yy * 4 + xx;
+                        // Reconstruct Z from the normal-map XY (red, green).
+                        float nx = red[i] / 127.5f - 1.0f;
+                        float ny = green[i] / 127.5f - 1.0f;
+                        float nz2 = 1.0f - nx * nx - ny * ny;
+                        float nz = nz2 > 0.0f ? std::sqrt(nz2) : 0.0f;
+                        uint8_t b = static_cast<uint8_t>((nz * 0.5f + 0.5f) * 255.0f);
+                        putPixel(img, width, height, x * 4 + xx, y * 4 + yy, red[i], green[i], b, 255);
+                    }
+            }
+        return img;
+    }
+
     std::vector<uint8_t> decodeToRGBA(const Texture& texture)
     {
         if (!texture.data || texture.data->fullData.empty()) return {};
@@ -215,6 +261,7 @@ namespace evw::texconv
         case TextureFormat::D3DFMT_DXT3: return decompressDxt3(d, w, h);
         case TextureFormat::D3DFMT_DXT5: return decompressDxt5(d, w, h);
         case TextureFormat::D3DFMT_ATI1: return decompressBC4(d, w, h);
+        case TextureFormat::D3DFMT_ATI2: return decompressBC5(d, w, h);
         case TextureFormat::D3DFMT_A8R8G8B8:
         case TextureFormat::D3DFMT_A8B8G8R8:
         {

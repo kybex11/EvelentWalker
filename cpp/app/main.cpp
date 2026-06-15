@@ -20,6 +20,7 @@
 #include "evw/app/explorer.h"
 #include "evw/gamefiles/ddsio.h"
 #include "evw/gamefiles/gamefile.h"
+#include "evw/gamefiles/heightmap.h"
 #include "evw/gamefiles/jenk.h"
 #include "evw/gamefiles/gtacrypto.h"
 #include "evw/gamefiles/meta.h"
@@ -67,7 +68,8 @@ namespace
             "  evw_cli meta    <folder> <entryPath>\n"
             "  evw_cli tree    <folder> [subPath]\n"
             "  evw_cli types   <folder>\n"
-            "  evw_cli hash    <string>\n");
+            "  evw_cli hash    <string>\n"
+            "  evw_cli hmap    <folder> <entryPath> [out.pgm]\n");
         return 1;
     }
 
@@ -287,6 +289,26 @@ int main(int argc, char** argv)
         std::printf("Entry types in %zu entries:\n", mgr.entryCount());
         for (const auto& c : counts)
             std::printf("  %-28s %zu\n", c.first.c_str(), c.second);
+        return 0;
+    }
+
+    if (cmd == "hmap")
+    {
+        if (argc < 4) return usage();
+        std::string folder = argv[2], entryPath = argv[3];
+        std::string outFile = (argc > 4) ? argv[4] : "";
+        RpfManager mgr(keys);
+        mgr.init(folder);
+        auto data = mgr.getFileData(entryPath);
+        if (data.empty()) { std::fprintf(stderr, "Failed to extract: %s\n", entryPath.c_str()); return 2; }
+        HeightmapFile hm;
+        if (!hm.load(data)) { std::fprintf(stderr, "Not a heightmap: %s\n", entryPath.c_str()); return 3; }
+        std::string pgm = hm.toPGM();
+        std::printf("Heightmap %ux%u\n", hm.width, hm.height);
+        if (outFile.empty()) outFile = "heightmap.pgm";
+        std::ofstream out(outFile, std::ios::binary);
+        out.write(pgm.data(), static_cast<std::streamsize>(pgm.size()));
+        std::printf("Wrote PGM (%zu bytes) to %s\n", pgm.size(), outFile.c_str());
         return 0;
     }
 

@@ -47,8 +47,8 @@ namespace EvelentWalker.Forms
             this.PlaylistSizeHeader = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.ExportAsWav = new System.Windows.Forms.ToolStripMenuItem();
-            this.VolumeTrackBar = new System.Windows.Forms.TrackBar();
-            this.PositionTrackBar = new System.Windows.Forms.TrackBar();
+            this.VolumeTrackBar = new EvelentWalker.WinForms.TrackBarFix();
+            this.PositionTrackBar = new EvelentWalker.WinForms.TrackBarFix();
             this.DetailsTabPage = new System.Windows.Forms.TabPage();
             this.DetailsPropertyGrid = new EvelentWalker.WinForms.PropertyGridFix();
             this.XmlTabPage = new System.Windows.Forms.TabPage();
@@ -393,8 +393,8 @@ namespace EvelentWalker.Forms
         private System.Windows.Forms.Button PrevButton;
         private System.Windows.Forms.Button NextButton;
         private System.Windows.Forms.Button PlayButton;
-        private System.Windows.Forms.TrackBar VolumeTrackBar;
-        private System.Windows.Forms.TrackBar PositionTrackBar;
+        private EvelentWalker.WinForms.TrackBarFix VolumeTrackBar;
+        private EvelentWalker.WinForms.TrackBarFix PositionTrackBar;
         private System.Windows.Forms.Timer Timer;
         private System.Windows.Forms.CheckBox chbAutoJump;
         private System.Windows.Forms.Label VolumeLabel;

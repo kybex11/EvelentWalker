@@ -31,6 +31,9 @@ namespace evw::gamefiles
     // Human-readable name of a texture format.
     const char* textureFormatName(TextureFormat format);
 
+    // True for block-compressed formats (DXT/ATI/BC7).
+    bool isCompressedFormat(TextureFormat format);
+
     // Graphics-segment block holding the raw (mip-chained) pixel data.
     struct TextureData
     {

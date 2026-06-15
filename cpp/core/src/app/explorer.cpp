@@ -10,6 +10,7 @@
 #include "evw/gamefiles/awc.h"
 #include "evw/gamefiles/bounds.h"
 #include "evw/gamefiles/dictionaries.h"
+#include "evw/gamefiles/distantlights.h"
 #include "evw/gamefiles/drawable.h"
 #include "evw/gamefiles/dxt_decode.h"
 #include "evw/gamefiles/frag.h"
@@ -17,6 +18,7 @@
 #include "evw/gamefiles/gamefile.h"
 #include "evw/gamefiles/gxt2.h"
 #include "evw/gamefiles/gxt2.h"
+#include "evw/gamefiles/heightmap.h"
 #include "evw/gamefiles/meta.h"
 #include "evw/gamefiles/meta_xml.h"
 #include "evw/gamefiles/navmesh.h"
@@ -26,6 +28,7 @@
 #include "evw/gamefiles/rbf.h"
 #include "evw/gamefiles/rbf_xml.h"
 #include "evw/gamefiles/texture.h"
+#include "evw/gamefiles/watermap.h"
 #include "evw/gamefiles/ypdb.h"
 
 namespace evw::app
@@ -302,6 +305,36 @@ namespace evw::app
             {
                 char buf[128];
                 std::snprintf(buf, sizeof(buf), "AWC audio: %d streams (v%u)", awc.streamCount, awc.version);
+                pv.summary = buf;
+                pv.ok = true;
+            }
+        }
+        else if (endsWith(lower, ".dat"))
+        {
+            pv.kind = PreviewKind::Unknown;
+            HeightmapFile hm;
+            WatermapFile wm;
+            if (hm.load(data))
+            {
+                char buf[128];
+                std::snprintf(buf, sizeof(buf), "Heightmap %ux%u (compressed=%u)",
+                              hm.width, hm.height, hm.compressed);
+                pv.summary = buf;
+                pv.ok = true;
+            }
+            else if (wm.load(data))
+            {
+                char buf[128];
+                std::snprintf(buf, sizeof(buf), "Watermap %ux%u: %zu rivers, %zu lakes, %zu pools",
+                              wm.width(), wm.height(), wm.rivers().size(), wm.lakes().size(),
+                              wm.pools().size());
+                pv.summary = buf;
+                pv.ok = true;
+            }
+            else
+            {
+                char buf[64];
+                std::snprintf(buf, sizeof(buf), "%zu bytes (.dat)", data.size());
                 pv.summary = buf;
                 pv.ok = true;
             }

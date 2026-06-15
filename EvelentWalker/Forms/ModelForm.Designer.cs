@@ -95,7 +95,7 @@ namespace EvelentWalker.Forms
             this.HDLightsCheckBox = new System.Windows.Forms.CheckBox();
             this.label19 = new System.Windows.Forms.Label();
             this.HDRRenderingCheckBox = new System.Windows.Forms.CheckBox();
-            this.TimeOfDayTrackBar = new System.Windows.Forms.TrackBar();
+            this.TimeOfDayTrackBar = new EvelentWalker.WinForms.TrackBarFix();
             this.ShadowsCheckBox = new System.Windows.Forms.CheckBox();
             this.ControlLightDirCheckBox = new System.Windows.Forms.CheckBox();
             this.SkydomeCheckBox = new System.Windows.Forms.CheckBox();
@@ -1122,7 +1122,7 @@ namespace EvelentWalker.Forms
         private System.Windows.Forms.CheckBox ControlLightDirCheckBox;
         private System.Windows.Forms.Label TimeOfDayLabel;
         private System.Windows.Forms.Label label19;
-        private System.Windows.Forms.TrackBar TimeOfDayTrackBar;
+        private EvelentWalker.WinForms.TrackBarFix TimeOfDayTrackBar;
         private System.Windows.Forms.CheckBox SkeletonsCheckBox;
         private System.Windows.Forms.Button SaveSharedTexturesButton;
         private System.Windows.Forms.CheckBox HDTexturesCheckBox;

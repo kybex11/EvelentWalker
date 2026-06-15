@@ -140,6 +140,11 @@
 - [x] Heightmap: `toPGMMin` (мин-высоты в PGM) — проверено
 - [x] CLI: команды `hash <string>` и `types <folder>` (счётчик типов записей) — собирается
 - [x] GUI: рендер словаря .ydd с выбором индекса drawable, превью текстур .ytd (D3D11 SRV из RGBA, переключение текстур) — собирается
+- [x] Текстуры: декод BC5(ATI2)→нормаль-мапа (реконструкция Z), `isCompressedFormat` — проверено
+- [x] Meta → XML: явная обработка ArrayOfBytes (count) и DataBlockPointer (block id) — проверено
+- [x] CLI: команда `hmap` (экспорт heightmap → PGM-файл) — собирается
+- [x] Эксплорер: превью .dat (детект Heightmap/Watermap по содержимому) — собирается
+- [x] GUI: кнопка «Save DDS» для просматриваемой текстуры .ytd — собирается
 - [x] Ymap (карты мира): CMapData / CEntityDef через Meta + массив указателей — проверено
 - [x] Ytyp (архетипы): CMapTypes / CBaseArchetypeDef — связь entity→архетип→drawable/texture — проверено
 - [ ] gen9-вариант текстур (Enhanced)
