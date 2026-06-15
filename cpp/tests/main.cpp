@@ -6,6 +6,7 @@
 #include "evw/app/explorer.h"
 #include "evw/app/render_mesh.h"
 #include "evw/gamefiles/aes.h"
+#include "evw/gamefiles/awc.h"
 #include "evw/gamefiles/bounds.h"
 #include "evw/gamefiles/gamefile.h"
 #include "evw/gamefiles/gxt2.h"
@@ -1803,6 +1804,29 @@ static void testFragType()
     check(frag->drawable == nullptr, "no drawable (pointer 0)");
 }
 
+static void testAwc()
+{
+    std::printf("[awc] audio container header\n");
+    using namespace evw::gamefiles;
+    DataWriter w; // little-endian
+    w.Write(static_cast<uint32_t>(AwcFile::MAGIC)); // "ADAT"
+    w.Write(static_cast<uint16_t>(1));              // version
+    w.Write(static_cast<uint16_t>(0xFF01));         // flags (bit0 = chunk indices)
+    w.Write(static_cast<int32_t>(2));               // stream count
+    w.Write(static_cast<int32_t>(64));              // data offset
+    w.Write(static_cast<uint16_t>(0));              // chunk index 0
+    w.Write(static_cast<uint16_t>(3));              // chunk index 1
+
+    AwcFile awc;
+    bool ok = awc.load(w.buffer());
+    check(ok, "awc loaded");
+    check(awc.version == 1, "awc version");
+    check(awc.streamCount == 2, "awc stream count");
+    check(awc.dataOffset == 64, "awc data offset");
+    check(awc.chunkIndicesFlag(), "chunk indices flag set");
+    check(awc.chunkIndices.size() == 2 && awc.chunkIndices[1] == 3, "chunk indices read");
+}
+
 int main()
 {
     std::printf("EvelentWalker C++ port self-tests\n");
@@ -1850,6 +1874,7 @@ int main()
     testNodeDictionary();
     testNavMesh();
     testFragType();
+    testAwc();
 
     std::printf("\n%d/%d checks passed\n", g_checks - g_failures, g_checks);
     if (g_failures != 0)
