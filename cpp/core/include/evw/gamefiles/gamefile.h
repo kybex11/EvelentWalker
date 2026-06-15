@@ -37,6 +37,7 @@ namespace evw::gamefiles
         Awc,        // audio wave container
         Fxc,        // shaders
         Cut,        // cutscene
+        Mrf,        // move network
         Heightmap,  // .dat heightmap
         Dds,        // texture
         Xml,        // xml

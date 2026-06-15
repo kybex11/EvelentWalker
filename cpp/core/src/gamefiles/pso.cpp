@@ -2,6 +2,8 @@
 
 #include "evw/gamefiles/data.h"
 
+#include <cstring>
+
 namespace evw::gamefiles
 {
     bool PsoFile::isPSO(const std::vector<uint8_t>& data)
@@ -63,8 +65,50 @@ namespace evw::gamefiles
                 }
                 break;
             }
+            case PsoSection::PSCH:
+            {
+                sr.ReadInt32();            // Ident
+                sr.ReadInt32();            // Length
+                uint32_t count = sr.ReadUInt32();
+                struct IdxInfo { uint32_t nameHash; int32_t offset; };
+                std::vector<IdxInfo> idx(count);
+                for (uint32_t i = 0; i < count; ++i)
+                {
+                    idx[i].nameHash = sr.ReadUInt32();
+                    idx[i].offset = sr.ReadInt32();
+                }
+                for (uint32_t i = 0; i < count; ++i)
+                {
+                    sr.setPosition(idx[i].offset);
+                    uint8_t type = sr.ReadByte();
+                    sr.setPosition(idx[i].offset);
+                    if (type == 0) // structure
+                    {
+                        uint32_t x = sr.ReadUInt32();
+                        int16_t entriesCount = static_cast<int16_t>(x & 0xFFFF);
+                        PsoSchemaStructure s;
+                        s.nameHash = idx[i].nameHash;
+                        s.structureLength = sr.ReadInt32();
+                        sr.ReadUInt32();   // Unk_Ch
+                        s.entries.resize(entriesCount > 0 ? entriesCount : 0);
+                        for (int j = 0; j < entriesCount; ++j)
+                        {
+                            PsoSchemaEntry e;
+                            e.entryNameHash = sr.ReadUInt32();
+                            e.type = sr.ReadByte();
+                            e.unk5 = sr.ReadByte();
+                            e.dataOffset = sr.ReadUInt16();
+                            e.referenceKey = sr.ReadUInt32();
+                            s.entries[j] = e;
+                        }
+                        schema_.push_back(std::move(s));
+                    }
+                    // type == 1 (enum) not captured yet
+                }
+                break;
+            }
             default:
-                break; // PSCH/STR*/PSIG/CHKS not parsed yet
+                break; // STR*/PSIG/CHKS not parsed yet
             }
         }
 
@@ -77,5 +121,74 @@ namespace evw::gamefiles
         int idx = id - 1;
         if (idx >= 0 && idx < static_cast<int>(entries_.size())) return &entries_[idx];
         return nullptr;
+    }
+
+    const PsoSchemaStructure* PsoFile::findSchema(uint32_t nameHash) const
+    {
+        for (const auto& s : schema_)
+            if (s.nameHash == nameHash) return &s;
+        return nullptr;
+    }
+
+    uint8_t PsoFile::readByteAt(int32_t offset) const
+    {
+        if (offset < 0 || offset >= static_cast<int32_t>(dataSection_.size())) return 0;
+        return dataSection_[offset];
+    }
+
+    uint16_t PsoFile::readUInt16At(int32_t offset) const
+    {
+        if (offset < 0 || offset + 2 > static_cast<int32_t>(dataSection_.size())) return 0;
+        return (static_cast<uint16_t>(dataSection_[offset]) << 8) |
+               static_cast<uint16_t>(dataSection_[offset + 1]);
+    }
+
+    uint32_t PsoFile::readUInt32At(int32_t offset) const
+    {
+        if (offset < 0 || offset + 4 > static_cast<int32_t>(dataSection_.size())) return 0;
+        return (static_cast<uint32_t>(dataSection_[offset]) << 24) |
+               (static_cast<uint32_t>(dataSection_[offset + 1]) << 16) |
+               (static_cast<uint32_t>(dataSection_[offset + 2]) << 8) |
+               static_cast<uint32_t>(dataSection_[offset + 3]);
+    }
+
+    int32_t PsoFile::readInt32At(int32_t offset) const
+    {
+        return static_cast<int32_t>(readUInt32At(offset));
+    }
+
+    float PsoFile::readFloatAt(int32_t offset) const
+    {
+        uint32_t bits = readUInt32At(offset);
+        float f;
+        std::memcpy(&f, &bits, sizeof(f));
+        return f;
+    }
+
+    int32_t PsoFile::fieldOffset(int id, uint16_t field) const
+    {
+        const PsoDataMappingEntry* block = getBlock(id);
+        if (!block) return -1;
+        // The data section buffer includes the 8-byte PSIN section header, so a
+        // block's payload begins at (8 + block->offset).
+        return 8 + block->offset + static_cast<int32_t>(field);
+    }
+
+    uint32_t PsoFile::readBlockUInt32(int id, uint16_t field) const
+    {
+        int32_t off = fieldOffset(id, field);
+        return off < 0 ? 0u : readUInt32At(off);
+    }
+
+    int32_t PsoFile::readBlockInt32(int id, uint16_t field) const
+    {
+        int32_t off = fieldOffset(id, field);
+        return off < 0 ? 0 : readInt32At(off);
+    }
+
+    float PsoFile::readBlockFloat(int id, uint16_t field) const
+    {
+        int32_t off = fieldOffset(id, field);
+        return off < 0 ? 0.0f : readFloatAt(off);
     }
 }

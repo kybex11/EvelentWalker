@@ -67,6 +67,14 @@ namespace evw::gamefiles
         return true;
     }
 
+    size_t JenkIndex::EnsureAll(const std::vector<std::string>& strings)
+    {
+        size_t added = 0;
+        for (const auto& s : strings)
+            if (!Ensure(s)) ++added;
+        return added;
+    }
+
     std::string JenkIndex::GetString(uint32_t hash)
     {
         std::lock_guard<std::mutex> lock(mutex());

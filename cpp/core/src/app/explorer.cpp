@@ -4,9 +4,15 @@
 #include <cstdio>
 
 #include "evw/app/render_mesh.h"
+#include "evw/gamefiles/awc.h"
 #include "evw/gamefiles/bounds.h"
 #include "evw/gamefiles/drawable.h"
+#include "evw/gamefiles/frag.h"
 #include "evw/gamefiles/gxt2.h"
+#include "evw/gamefiles/navmesh.h"
+#include "evw/gamefiles/node.h"
+#include "evw/gamefiles/pso.h"
+#include "evw/gamefiles/rbf.h"
 #include "evw/gamefiles/texture.h"
 
 namespace evw::app
@@ -148,12 +154,79 @@ namespace evw::app
                 pv.ok = true;
             }
         }
+        else if (endsWith(lower, ".yft"))
+        {
+            pv.kind = PreviewKind::Drawable;
+            ResourceDataReader r(e->systemSize(), e->graphicsSize(), data);
+            auto frag = r.ReadBlock<FragType>();
+            char buf[160];
+            std::snprintf(buf, sizeof(buf), "Fragment: radius %.2f, gravity %.2f, glass %u%s",
+                          frag->boundingSphereRadius, frag->gravityFactor, frag->glassWindowsCount,
+                          frag->drawable ? ", has drawable" : "");
+            pv.summary = buf;
+            pv.ok = true;
+        }
+        else if (endsWith(lower, ".ynd"))
+        {
+            pv.kind = PreviewKind::Unknown;
+            ResourceDataReader r(e->systemSize(), e->graphicsSize(), data);
+            auto nd = r.ReadBlock<NodeDictionary>();
+            char buf[128];
+            std::snprintf(buf, sizeof(buf), "PathNodes: %u nodes (%u vehicle, %u ped)",
+                          nd->nodesCount, nd->nodesCountVehicle, nd->nodesCountPed);
+            pv.summary = buf;
+            pv.ok = true;
+        }
+        else if (endsWith(lower, ".ynv"))
+        {
+            pv.kind = PreviewKind::Unknown;
+            ResourceDataReader r(e->systemSize(), e->graphicsSize(), data);
+            auto nav = r.ReadBlock<NavMesh>();
+            char buf[160];
+            std::snprintf(buf, sizeof(buf), "NavMesh: %u vertices, %u polys, area %u",
+                          nav->verticesCount, nav->polysCount, nav->areaID);
+            pv.summary = buf;
+            pv.ok = true;
+        }
+        else if (endsWith(lower, ".awc"))
+        {
+            pv.kind = PreviewKind::Unknown;
+            AwcFile awc;
+            if (awc.load(data))
+            {
+                char buf[128];
+                std::snprintf(buf, sizeof(buf), "AWC audio: %d streams (v%u)", awc.streamCount, awc.version);
+                pv.summary = buf;
+                pv.ok = true;
+            }
+        }
         else
         {
             pv.kind = (e->type == RpfEntryType::Resource) ? PreviewKind::Unknown : PreviewKind::Binary;
-            char buf[64];
-            std::snprintf(buf, sizeof(buf), "%zu bytes", data.size());
-            pv.summary = buf;
+            if (PsoFile::isPSO(data))
+            {
+                PsoFile pso;
+                pso.load(data);
+                char buf[128];
+                std::snprintf(buf, sizeof(buf), "PSO metadata: %zu blocks, %zu schema structs",
+                              pso.entries().size(), pso.schema().size());
+                pv.summary = buf;
+            }
+            else if (RbfFile::isRBF(data))
+            {
+                RbfFile rbf;
+                auto root = rbf.load(data);
+                char buf[128];
+                std::snprintf(buf, sizeof(buf), "RBF metadata: root '%s', %zu children",
+                              root ? root->name.c_str() : "?", root ? root->children.size() : 0);
+                pv.summary = buf;
+            }
+            else
+            {
+                char buf[64];
+                std::snprintf(buf, sizeof(buf), "%zu bytes", data.size());
+                pv.summary = buf;
+            }
             pv.ok = true;
         }
         return pv;

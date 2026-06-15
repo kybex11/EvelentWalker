@@ -35,6 +35,9 @@ namespace evw::gamefiles
         static void Clear();
         // Returns true if the hash was already present (or empty), false if newly added.
         static bool Ensure(const std::string& str);
+        // Ensures every string in the list is indexed; returns the number of
+        // newly added entries.
+        static size_t EnsureAll(const std::vector<std::string>& strings);
         // Returns the string, or the decimal representation of the hash if unknown.
         static std::string GetString(uint32_t hash);
         // Returns the string, or an empty string if unknown.

@@ -48,6 +48,7 @@ namespace evw::gamefiles
         if (e == "awc") return GameFileType::Awc;
         if (e == "fxc") return GameFileType::Fxc;
         if (e == "cut") return GameFileType::Cut;
+        if (e == "mrf") return GameFileType::Mrf;
         if (e == "dat") return GameFileType::Heightmap;
         if (e == "dds") return GameFileType::Dds;
         if (e == "xml") return GameFileType::Xml;
@@ -86,6 +87,7 @@ namespace evw::gamefiles
         case GameFileType::Awc: return "Audio Wave Container (AWC)";
         case GameFileType::Fxc: return "Shaders (FXC)";
         case GameFileType::Cut: return "Cutscene (CUT)";
+        case GameFileType::Mrf: return "Move Network (MRF)";
         case GameFileType::Heightmap: return "Heightmap (DAT)";
         case GameFileType::Dds: return "DDS Texture";
         case GameFileType::Xml: return "XML";

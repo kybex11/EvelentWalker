@@ -8,15 +8,19 @@
 #include "evw/gamefiles/aes.h"
 #include "evw/gamefiles/awc.h"
 #include "evw/gamefiles/bounds.h"
+#include "evw/gamefiles/clip.h"
 #include "evw/gamefiles/gamefile.h"
 #include "evw/gamefiles/gxt2.h"
 #include "evw/gamefiles/heightmap.h"
+#include "evw/gamefiles/mrf.h"
 #include "evw/gamefiles/navmesh.h"
 #include "evw/gamefiles/node.h"
+#include "evw/gamefiles/particle.h"
 #include "evw/gamefiles/pso.h"
 #include "evw/gamefiles/rbf.h"
 #include "evw/gamefiles/rbf_xml.h"
 #include "evw/gamefiles/records.h"
+#include "evw/gamefiles/rel.h"
 #include "evw/gamefiles/data.h"
 #include "evw/gamefiles/dotnet_random.h"
 #include "evw/gamefiles/gtacrypto.h"
@@ -1827,6 +1831,248 @@ static void testAwc()
     check(awc.chunkIndices.size() == 2 && awc.chunkIndices[1] == 3, "chunk indices read");
 }
 
+static void testPsoSchema()
+{
+    std::printf("[pso] PSCH schema structures\n");
+    using namespace evw::gamefiles;
+    DataWriter w(Endianess::BigEndian);
+    // PSIN section (16 bytes) so isPSO() is true
+    w.Write(static_cast<uint32_t>(0x5053494E));
+    w.Write(static_cast<int32_t>(16));
+    for (int i = 0; i < 8; ++i) w.Write(static_cast<uint8_t>(0));
+    // PSCH section (44 bytes)
+    w.Write(static_cast<uint32_t>(0x50534348)); // "PSCH"
+    w.Write(static_cast<int32_t>(44));          // length
+    w.Write(static_cast<uint32_t>(1));          // count
+    // index info: nameHash, offset(=20)
+    w.Write(static_cast<uint32_t>(0xABCD));
+    w.Write(static_cast<int32_t>(20));
+    // structure at section offset 20
+    w.Write(static_cast<uint32_t>(0x00000001)); // type 0, entriesCount 1
+    w.Write(static_cast<int32_t>(16));          // structureLength
+    w.Write(static_cast<uint32_t>(0));          // Unk_Ch
+    // one entry (12 bytes)
+    w.Write(static_cast<uint32_t>(0x1111));     // entryNameHash
+    w.Write(static_cast<uint8_t>(5));           // type
+    w.Write(static_cast<uint8_t>(0));           // unk5
+    w.Write(static_cast<uint16_t>(8));          // dataOffset
+    w.Write(static_cast<uint32_t>(0));          // referenceKey
+
+    PsoFile pso;
+    bool ok = pso.load(w.buffer());
+    check(ok, "pso with schema loaded");
+    check(pso.schema().size() == 1, "one schema structure");
+    const PsoSchemaStructure* s = pso.findSchema(0xABCD);
+    check(s != nullptr, "schema found by hash");
+    check(s && s->structureLength == 16, "schema structure length");
+    check(s && s->entries.size() == 1, "schema has 1 entry");
+    check(s && !s->entries.empty() && s->entries[0].entryNameHash == 0x1111u, "schema entry name");
+    check(s && !s->entries.empty() && s->entries[0].dataOffset == 8, "schema entry offset");
+}
+
+static void testMrf()
+{
+    std::printf("[mrf] MoVE move-network header + trigger/flag tables\n");
+    using namespace evw::gamefiles;
+
+    DataWriter w; // little-endian
+    w.Write(static_cast<uint32_t>(0x45566F4D)); // Magic 'MoVE'
+    w.Write(static_cast<uint32_t>(2));           // Version (GTA5)
+    w.Write(static_cast<uint32_t>(0));           // HeaderUnk1
+    w.Write(static_cast<uint32_t>(0));           // HeaderUnk2
+    w.Write(static_cast<uint32_t>(0));           // HeaderUnk3
+    w.Write(static_cast<uint32_t>(0));           // DataLength
+    w.Write(static_cast<uint32_t>(0));           // UnkBytesCount
+    w.Write(static_cast<uint32_t>(0));           // Unk1_Count
+    // triggers (2)
+    w.Write(static_cast<uint32_t>(2));
+    w.Write(static_cast<uint32_t>(0x11111111)); w.Write(static_cast<uint32_t>(3));
+    w.Write(static_cast<uint32_t>(0x22222222)); w.Write(static_cast<uint32_t>(7));
+    // flags (1)
+    w.Write(static_cast<uint32_t>(1));
+    w.Write(static_cast<uint32_t>(0x33333333)); w.Write(static_cast<uint32_t>(5));
+
+    MrfFile mrf;
+    check(mrf.load(w.buffer()), "MRF header parses");
+    check(mrf.magic() == 0x45566F4Du, "magic is MoVE");
+    check(mrf.version() == 2, "version 2");
+    check(mrf.triggers().size() == 2, "2 triggers");
+    check(mrf.triggers()[1].name == 0x22222222u && mrf.triggers()[1].bitPosition == 7,
+          "trigger fields read");
+    check(mrf.flags().size() == 1, "1 flag");
+    check(mrf.flags()[0].bitPosition == 5, "flag bit position read");
+
+    // Bad magic must fail.
+    std::vector<uint8_t> bad(32, 0);
+    MrfFile mrf2;
+    check(!mrf2.load(bad), "invalid header rejected");
+}
+
+static void testRel()
+{
+    std::printf("[rel] audio data container header (hash index)\n");
+    using namespace evw::gamefiles;
+
+    DataWriter w; // little-endian
+    w.Write(static_cast<uint32_t>(54));          // RelType = Dat54DataEntries
+    w.Write(static_cast<uint32_t>(4));           // DataLength
+    w.Write(static_cast<uint32_t>(0xDEADBEEF));  // DataBlock (4 bytes)
+    w.Write(static_cast<uint32_t>(0));           // NameTableLength
+    w.Write(static_cast<uint32_t>(0));           // NameTableCount
+    // index (hash) count = 2
+    w.Write(static_cast<uint32_t>(2));
+    w.Write(static_cast<uint32_t>(0xAAAA0001)); w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(16));
+    w.Write(static_cast<uint32_t>(0xBBBB0002)); w.Write(static_cast<uint32_t>(16)); w.Write(static_cast<uint32_t>(8));
+    // hash table count = 0
+    w.Write(static_cast<uint32_t>(0));
+    // pack table count = 0
+    w.Write(static_cast<uint32_t>(0));
+
+    RelFile rel;
+    check(rel.load(w.buffer()), "REL header parses");
+    check(rel.relType() == RelDatFileType::Dat54DataEntries, "rel type Dat54");
+    check(rel.dataLength() == 4 && rel.dataBlock().size() == 4, "data block size");
+    check(!rel.isAudioConfig(), "not audio config");
+    check(rel.indexHashes().size() == 2, "2 index hashes");
+    check(rel.indexHashes()[0].name == 0xAAAA0001u && rel.indexHashes()[0].length == 16,
+          "index hash fields");
+    check(rel.indexHashes()[1].offset == 16, "second index offset");
+}
+
+static void testClipDictionary()
+{
+    std::printf("[ycd] clip dictionary header + clip pointer slots\n");
+    using namespace evw::gamefiles;
+
+    DataWriter w;
+    // ResourceFileBase (16): VFT, Unknown=1, PagesInfoPointer=0
+    w.setPosition(0x00);
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(1)); w.Write(static_cast<uint64_t>(0));
+    // ClipDictionary structure at 0x10
+    w.setPosition(0x10);
+    w.Write(static_cast<uint32_t>(0));            // Unknown_10h
+    w.Write(static_cast<uint32_t>(0));            // Unknown_14h
+    w.Write(static_cast<uint64_t>(0));            // AnimationsPointer
+    w.Write(static_cast<uint32_t>(0x00000101));   // Unknown_20h
+    w.Write(static_cast<uint32_t>(0));            // Unknown_24h
+    w.Write(static_cast<uint64_t>(0x50000040));   // ClipsPointer -> slot table at 0x40
+    w.Write(static_cast<uint16_t>(2));            // ClipsMapCapacity
+    w.Write(static_cast<uint16_t>(2));            // ClipsMapEntries
+    w.Write(static_cast<uint32_t>(0x01000000));   // Unknown_34h
+    w.Write(static_cast<uint32_t>(0));            // Unknown_38h
+    w.Write(static_cast<uint32_t>(0));            // Unknown_3Ch
+    // clip slot table at 0x40 (2 pointers)
+    w.setPosition(0x40);
+    w.Write(static_cast<uint64_t>(0x50000080));
+    w.Write(static_cast<uint64_t>(0));
+
+    std::vector<uint8_t> data = w.buffer();
+    ResourceDataReader r(static_cast<uint32_t>(data.size()), 0, data);
+    auto cd = r.ReadBlock<ClipDictionary>();
+    check(cd->clipsMapCapacity == 2, "capacity 2");
+    check(cd->clipsMapEntries == 2, "entries 2");
+    check(cd->unknown20 == 0x00000101u, "Unknown_20h read");
+    check(cd->clipPointers.size() == 2, "2 clip pointer slots");
+    check(cd->clipPointers[0] == 0x50000080ull, "first clip pointer value");
+}
+
+static void testParticle()
+{
+    std::printf("[ypt] particle effects list header + name\n");
+    using namespace evw::gamefiles;
+
+    DataWriter w;
+    // ResourceFileBase (16)
+    w.setPosition(0x00);
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(1)); w.Write(static_cast<uint64_t>(0));
+    // ParticleEffectsList structure at 0x10 (10 ulongs)
+    w.setPosition(0x10);
+    w.Write(static_cast<uint64_t>(0x50000080));   // NamePointer
+    w.Write(static_cast<uint64_t>(0));            // Unknown_18h
+    w.Write(static_cast<uint64_t>(0));            // TextureDictionaryPointer
+    w.Write(static_cast<uint64_t>(0));            // Unknown_28h
+    w.Write(static_cast<uint64_t>(0));            // DrawableDictionaryPointer
+    w.Write(static_cast<uint64_t>(0));            // ParticleRuleDictionaryPointer
+    w.Write(static_cast<uint64_t>(0));            // Unknown_40h
+    w.Write(static_cast<uint64_t>(0));            // EmitterRuleDictionaryPointer
+    w.Write(static_cast<uint64_t>(0));            // EffectRuleDictionaryPointer
+    w.Write(static_cast<uint64_t>(0));            // Unknown_58h
+    // name at 0x80
+    w.setPosition(0x80);
+    for (const char* p = "core"; *p; ++p) w.Write(static_cast<uint8_t>(*p));
+    w.Write(static_cast<uint8_t>(0));
+
+    std::vector<uint8_t> data = w.buffer();
+    ResourceDataReader r(static_cast<uint32_t>(data.size()), 0, data);
+    auto pt = r.ReadBlock<ParticleEffectsList>();
+    check(pt->namePointer == 0x50000080ull, "name pointer read");
+    check(pt->name == "core", "name string resolved");
+}
+
+static void testPsoTypedRead()
+{
+    std::printf("[pso] typed value access by block + field offset\n");
+    using namespace evw::gamefiles;
+
+    // Build a minimal PSO with a PSIN data section and a PMAP with one block at
+    // offset 0, then read typed fields from the data section. Big-endian layout.
+    DataWriter dw(Endianess::BigEndian);
+    // PSIN section: 8-byte header + payload
+    // payload: at field 0 -> uint32 0x01020304, at field 4 -> float 2.5
+    uint32_t floatBits;
+    float f = 2.5f; std::memcpy(&floatBits, &f, 4);
+    uint32_t payloadLen = 8; // two uint32 fields
+    dw.Write(static_cast<uint32_t>(0x5053494E));         // 'PSIN'
+    dw.Write(static_cast<uint32_t>(8 + payloadLen));     // section length
+    dw.Write(static_cast<uint32_t>(0x01020304));         // field 0
+    dw.Write(floatBits);                                 // field 4
+    // PMAP section
+    dw.Write(static_cast<uint32_t>(0x504D4150));         // 'PMAP'
+    dw.Write(static_cast<uint32_t>(8 + 8 + 16));         // section length (hdr + root/count + 1 entry)
+    dw.Write(static_cast<int32_t>(1));                   // rootId
+    dw.Write(static_cast<int16_t>(1));                   // entriesCount
+    dw.Write(static_cast<int16_t>(0));                   // Unknown_Eh
+    // one entry
+    dw.Write(static_cast<uint32_t>(0xABCDEF01));         // nameHash
+    dw.Write(static_cast<int32_t>(0));                   // offset (block payload at start)
+    dw.Write(static_cast<int32_t>(0));                   // unknown8
+    dw.Write(static_cast<int32_t>(8));                   // length
+
+    PsoFile pso;
+    check(pso.load(dw.buffer()), "PSO loads");
+    check(pso.rootId() == 1, "root id");
+    check(pso.entries().size() == 1, "one data-map entry");
+    // Read field 0 of block 1 -> 0x01020304
+    check(pso.readBlockUInt32(1, 0) == 0x01020304u, "typed uint32 field read");
+    check(pso.readBlockFloat(1, 4) == 2.5f, "typed float field read");
+    check(pso.fieldOffset(1, 0) == 8, "field offset accounts for section header");
+    check(pso.readBlockUInt32(99, 0) == 0u, "invalid block id returns 0");
+}
+
+static void testJenkEnsureAll()
+{
+    std::printf("[jenk] EnsureAll bulk indexing\n");
+    using namespace evw::gamefiles;
+    JenkIndex::Clear();
+    std::vector<std::string> names = {"alpha", "beta", "gamma", "alpha"};
+    size_t added = JenkIndex::EnsureAll(names);
+    check(added == 3, "3 unique strings added (duplicate skipped)");
+    check(JenkIndex::GetString(JenkHash::GenHash(std::string_view("beta"))) == "beta",
+          "bulk-added string resolvable");
+    size_t again = JenkIndex::EnsureAll(names);
+    check(again == 0, "re-ensuring adds nothing");
+}
+
+static void testMrfGameFileType()
+{
+    std::printf("[gamefile] MRF/YCD/YPT/REL type detection\n");
+    using namespace evw::gamefiles;
+    check(detectGameFileType("anim.mrf") == GameFileType::Mrf, "mrf detected");
+    check(detectGameFileType("clips.ycd") == GameFileType::Ycd, "ycd detected");
+    check(detectGameFileType("fx.ypt") == GameFileType::Ypt, "ypt detected");
+    check(detectGameFileType("audio.rel") == GameFileType::Rel, "rel detected");
+}
+
 int main()
 {
     std::printf("EvelentWalker C++ port self-tests\n");
@@ -1864,6 +2110,7 @@ int main()
     testBounds();
     testBoundGeometry();
     testPso();
+    testPsoSchema();
     testRbf();
     testGxt2();
     testGameFileType();
@@ -1875,6 +2122,13 @@ int main()
     testNavMesh();
     testFragType();
     testAwc();
+    testMrf();
+    testRel();
+    testClipDictionary();
+    testParticle();
+    testPsoTypedRead();
+    testJenkEnsureAll();
+    testMrfGameFileType();
 
     std::printf("\n%d/%d checks passed\n", g_checks - g_failures, g_checks);
     if (g_failures != 0)

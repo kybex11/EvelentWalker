@@ -10,6 +10,9 @@
     <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\aes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\awc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\bounds.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -26,6 +29,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\dxt_decode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\frag.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\gamefile.cpp">
@@ -53,6 +59,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\model.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\navmesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\node.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="E:\evelent-core\EvelentWalker\EvelentWalker\cpp\core\src\gamefiles\pso.cpp">

@@ -29,6 +29,24 @@ namespace evw::gamefiles
         int32_t length = 0;
     };
 
+    // A field within a PSO schema structure.
+    struct PsoSchemaEntry
+    {
+        uint32_t entryNameHash = 0;
+        uint8_t type = 0;          // PsoDataType
+        uint8_t unk5 = 0;
+        uint16_t dataOffset = 0;
+        uint32_t referenceKey = 0;
+    };
+
+    // A structure definition in the PSO schema (PSCH).
+    struct PsoSchemaStructure
+    {
+        uint32_t nameHash = 0;
+        int32_t structureLength = 0;
+        std::vector<PsoSchemaEntry> entries;
+    };
+
     class PsoFile
     {
     public:
@@ -41,9 +59,34 @@ namespace evw::gamefiles
         // The raw PSIN data section (includes its 8-byte section header).
         const std::vector<uint8_t>& dataSection() const { return dataSection_; }
         const std::vector<PsoDataMappingEntry>& entries() const { return entries_; }
+        const std::vector<PsoSchemaStructure>& schema() const { return schema_; }
 
         // Returns the data-map entry for a 1-based block id, or nullptr.
         const PsoDataMappingEntry* getBlock(int id) const;
+
+        // Finds a schema structure by its name hash, or nullptr.
+        const PsoSchemaStructure* findSchema(uint32_t nameHash) const;
+
+        // ---- Typed value access into the data (PSIN) section ----
+        // All reads are big-endian, matching the on-disk PSO layout. `offset` is
+        // an absolute byte offset into the data section (which includes the
+        // 8-byte section header). Out-of-range reads return 0.
+        uint8_t  readByteAt(int32_t offset) const;
+        uint16_t readUInt16At(int32_t offset) const;
+        uint32_t readUInt32At(int32_t offset) const;
+        int32_t  readInt32At(int32_t offset) const;
+        float    readFloatAt(int32_t offset) const;
+
+        // Computes the absolute data-section offset of a field within a block.
+        // Block `id` is 1-based; `fieldOffset` is the field's dataOffset from the
+        // schema. The 8-byte PSIN section header is accounted for. Returns -1 if
+        // the block id is invalid.
+        int32_t fieldOffset(int id, uint16_t fieldOffset) const;
+
+        // Reads a typed field of a block by 1-based id and schema field offset.
+        uint32_t readBlockUInt32(int id, uint16_t fieldOffset) const;
+        int32_t  readBlockInt32(int id, uint16_t fieldOffset) const;
+        float    readBlockFloat(int id, uint16_t fieldOffset) const;
 
         // Detects whether the buffer is a PSO (first 4 bytes == "PSIN").
         static bool isPSO(const std::vector<uint8_t>& data);
@@ -53,5 +96,6 @@ namespace evw::gamefiles
         int rootId_ = 0;
         std::vector<uint8_t> dataSection_;
         std::vector<PsoDataMappingEntry> entries_;
+        std::vector<PsoSchemaStructure> schema_;
     };
 }
