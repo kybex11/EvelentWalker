@@ -10,6 +10,8 @@
 #include "evw/gamefiles/gamefile.h"
 #include "evw/gamefiles/gxt2.h"
 #include "evw/gamefiles/heightmap.h"
+#include "evw/gamefiles/navmesh.h"
+#include "evw/gamefiles/node.h"
 #include "evw/gamefiles/pso.h"
 #include "evw/gamefiles/rbf.h"
 #include "evw/gamefiles/rbf_xml.h"
@@ -22,6 +24,7 @@
 #include "evw/gamefiles/ddsio.h"
 #include "evw/gamefiles/drawable.h"
 #include "evw/gamefiles/dxt_decode.h"
+#include "evw/gamefiles/frag.h"
 #include "evw/gamefiles/geometry.h"
 #include "evw/gamefiles/meta.h"
 #include "evw/gamefiles/metatypes.h"
@@ -1666,6 +1669,140 @@ static void testBoundGeometry()
     check(bg->vertices.size() == 3 && bg->vertices[2] == math::Vector3(2, 2, 2), "dequantized vertex 2");
 }
 
+static void testNodeDictionary()
+{
+    std::printf("[ynd] path node dictionary\n");
+    using namespace evw::gamefiles;
+    DataWriter w;
+    w.setPosition(0x00);
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(1)); w.Write(static_cast<uint64_t>(0));
+    // NodeDictionary header from 0x10
+    w.setPosition(0x10);
+    w.Write(static_cast<uint64_t>(0x50000080)); // NodesPointer
+    w.Write(static_cast<uint32_t>(2));          // NodesCount
+    w.Write(static_cast<uint32_t>(2));          // vehicle
+    w.Write(static_cast<uint32_t>(0));          // ped
+    w.Write(static_cast<uint32_t>(0));          // Unk24
+    w.Write(static_cast<uint64_t>(0));          // LinksPtr
+    w.Write(static_cast<uint32_t>(0));          // LinksCount
+    w.Write(static_cast<uint32_t>(0));          // Unk34
+    w.Write(static_cast<uint64_t>(0));          // JunctionsPtr
+    w.Write(static_cast<uint64_t>(0));          // JHBPtr
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(0)); // Unk48/4C
+    w.Write(static_cast<uint64_t>(0));          // JunctionRefsPtr
+    w.Write(static_cast<uint16_t>(0)); w.Write(static_cast<uint16_t>(0)); // refs counts
+    w.Write(static_cast<uint32_t>(0));          // Unk5C
+    w.Write(static_cast<uint32_t>(0));          // JunctionsCount
+    w.Write(static_cast<uint32_t>(0));          // JHBCount
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(0)); // Unk68/6C
+    // node0 at 0x80
+    w.setPosition(0x80);
+    for (int i = 0; i < 4; ++i) w.Write(static_cast<uint32_t>(0));
+    w.Write(static_cast<uint16_t>(5)); w.Write(static_cast<uint16_t>(7));  // area, node
+    w.Write(static_cast<uint32_t>(0));                                     // street
+    w.Write(static_cast<uint16_t>(0)); w.Write(static_cast<uint16_t>(0));  // unused4, link
+    w.Write(static_cast<int16_t>(100)); w.Write(static_cast<int16_t>(200)); // posX/Y
+    w.Write(static_cast<uint8_t>(0)); w.Write(static_cast<uint8_t>(0));
+    w.Write(static_cast<int16_t>(50));                                     // posZ
+    w.Write(static_cast<uint8_t>(0)); w.Write(static_cast<uint8_t>(0));
+    w.Write(static_cast<uint8_t>(0)); w.Write(static_cast<uint8_t>(0));
+    // node1 at 0xA8
+    w.setPosition(0xA8);
+    for (int i = 0; i < 4; ++i) w.Write(static_cast<uint32_t>(0));
+    w.Write(static_cast<uint16_t>(9)); w.Write(static_cast<uint16_t>(0));
+    w.setPosition(0xA8 + 40 - 1); w.Write(static_cast<uint8_t>(0));
+
+    ResourceDataReader r(static_cast<uint32_t>(w.buffer().size()), 0, w.buffer());
+    auto nd = r.ReadBlock<NodeDictionary>();
+    check(nd->nodesCount == 2, "node count");
+    check(nd->nodes.size() == 2 && nd->nodes[0].areaID == 5 && nd->nodes[0].nodeID == 7, "node 0 ids");
+    check(nd->nodes.size() == 2 && nd->nodes[0].positionX == 100 && nd->nodes[0].positionZ == 50, "node 0 position");
+    check(nd->nodes.size() == 2 && nd->nodes[1].areaID == 9, "node 1 area id");
+}
+
+static void testNavMesh()
+{
+    std::printf("[ynv] nav mesh header\n");
+    using namespace evw::gamefiles;
+    DataWriter w;
+    // ResourceFileBase header
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(1)); w.Write(static_cast<uint64_t>(0));
+    // NavMesh header (sequential, matching read order)
+    w.Write(static_cast<uint32_t>(7));            // ContentFlags
+    w.Write(static_cast<uint32_t>(0));            // VersionUnk1
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(0)); // Unused 018/01C
+    for (int i = 0; i < 16; ++i) w.Write(0.0f);   // Transform
+    w.Write(100.0f); w.Write(50.0f); w.Write(100.0f); // AABBSize
+    w.Write(static_cast<uint32_t>(0));            // AABBUnk
+    w.Write(static_cast<uint64_t>(0));            // VerticesPointer
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(0)); // Unused 078/07C
+    w.Write(static_cast<uint64_t>(0));            // IndicesPointer
+    w.Write(static_cast<uint64_t>(0));            // EdgesPointer
+    w.Write(static_cast<uint32_t>(0));            // EdgesIndicesCount
+    for (int i = 0; i < 16; ++i) w.Write(static_cast<uint32_t>(0)); // AdjAreaIDs
+    w.Write(static_cast<uint64_t>(0));            // PolysPointer
+    w.Write(static_cast<uint64_t>(0));            // SectorTreePointer
+    w.Write(static_cast<uint64_t>(0));            // PortalsPointer
+    w.Write(static_cast<uint64_t>(0));            // PortalLinksPointer
+    w.Write(static_cast<uint32_t>(120));          // VerticesCount
+    w.Write(static_cast<uint32_t>(64));           // PolysCount
+    w.Write(static_cast<uint32_t>(5403));         // AreaID
+    w.Write(static_cast<uint32_t>(4096));         // TotalBytes
+    w.Write(static_cast<uint32_t>(8));            // PointsCount
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(0)); // Portals/PortalLinks counts
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(0));
+
+    ResourceDataReader r(static_cast<uint32_t>(w.buffer().size()), 0, w.buffer());
+    auto nav = r.ReadBlock<NavMesh>();
+    check(nav->contentFlags == 7, "nav content flags");
+    check(nav->aabbSize == math::Vector3(100, 50, 100), "nav aabb size");
+    check(nav->verticesCount == 120, "nav vertices count");
+    check(nav->polysCount == 64, "nav polys count");
+    check(nav->areaID == 5403, "nav area id");
+    check(nav->pointsCount == 8, "nav points count");
+}
+
+static void testFragType()
+{
+    std::printf("[yft] fragment type header\n");
+    using namespace evw::gamefiles;
+    DataWriter w;
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(1)); w.Write(static_cast<uint64_t>(0));
+    w.Write(static_cast<uint64_t>(0)); w.Write(static_cast<uint64_t>(0)); // Unknown_10/18
+    w.Write(1.0f); w.Write(2.0f); w.Write(3.0f);   // BoundingSphereCenter
+    w.Write(7.5f);                                  // BoundingSphereRadius
+    w.Write(static_cast<uint64_t>(0));              // DrawablePointer (none)
+    w.Write(static_cast<uint64_t>(0)); w.Write(static_cast<uint64_t>(0)); // arrays
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<int32_t>(0));  // count/flag
+    w.Write(static_cast<uint64_t>(0));              // Unknown_50h
+    w.Write(static_cast<uint64_t>(0));              // NamePointer
+    w.Write(static_cast<uint64_t>(0)); w.Write(static_cast<uint16_t>(0)); w.Write(static_cast<uint16_t>(0)); w.Write(static_cast<uint32_t>(0)); // Cloths
+    for (int i = 0; i < 7; ++i) w.Write(static_cast<uint64_t>(0)); // Unknown_70..A0
+    w.Write(static_cast<uint64_t>(0));              // BoneTransformsPointer
+    for (int i = 0; i < 7; ++i) w.Write(static_cast<int32_t>(0));  // B0..C8
+    w.Write(0.0f);                                  // Unknown_CCh
+    w.Write(9.8f);                                  // GravityFactor
+    w.Write(1.2f);                                  // BuoyancyFactor
+    w.Write(static_cast<uint8_t>(0));               // Unknown_D8h
+    w.Write(static_cast<uint8_t>(3));               // GlassWindowsCount
+    w.Write(static_cast<uint16_t>(0));              // Unknown_DAh
+    w.Write(static_cast<uint32_t>(0));              // Unknown_DCh
+    w.Write(static_cast<uint64_t>(0)); w.Write(static_cast<uint64_t>(0)); // GlassWindows/E8
+    w.Write(static_cast<uint64_t>(0)); w.Write(static_cast<uint64_t>(0)); // PhysicsLODGroup/DrawableCloth
+    w.Write(static_cast<uint64_t>(0)); w.Write(static_cast<uint64_t>(0)); // 100/108
+    w.Write(static_cast<uint64_t>(0)); w.Write(static_cast<uint16_t>(0)); w.Write(static_cast<uint16_t>(0)); w.Write(static_cast<uint32_t>(0)); // LightAttributes
+    w.Write(static_cast<uint64_t>(0)); w.Write(static_cast<uint64_t>(0)); // VehicleGlass/128
+
+    ResourceDataReader r(static_cast<uint32_t>(w.buffer().size()), 0, w.buffer());
+    auto frag = r.ReadBlock<FragType>();
+    check(frag->boundingSphereCenter == math::Vector3(1, 2, 3), "frag bounding sphere center");
+    check(frag->boundingSphereRadius == 7.5f, "frag bounding sphere radius");
+    check(frag->gravityFactor == 9.8f, "frag gravity factor");
+    check(frag->buoyancyFactor == 1.2f, "frag buoyancy factor");
+    check(frag->glassWindowsCount == 3, "frag glass windows count");
+    check(frag->drawable == nullptr, "no drawable (pointer 0)");
+}
+
 int main()
 {
     std::printf("EvelentWalker C++ port self-tests\n");
@@ -1710,6 +1847,9 @@ int main()
     testWaypointRecords();
     testQuaternion();
     testHeightmap();
+    testNodeDictionary();
+    testNavMesh();
+    testFragType();
 
     std::printf("\n%d/%d checks passed\n", g_checks - g_failures, g_checks);
     if (g_failures != 0)

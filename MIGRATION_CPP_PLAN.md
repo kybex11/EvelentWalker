@@ -86,6 +86,8 @@
 - [x] Ytd (текстуры): TextureDictionary / Texture / TextureData (legacy/non-gen9) — проверено
 - [x] Ybn (коллизии): Bounds + BoundComposite (дерево) + BoundGeometry (квантованные вершины) — проверено
 - [x] Ywr (waypoint record) / Yvr (vehicle record) — список записей; Ywr проверено
+- [x] Ynd (path nodes): NodeDictionary + PathNode (40б) массив узлов — проверено
+- [x] Ynv (nav mesh): заголовок NavMesh (bounds/counts/areaID) — проверено
 - [x] Gxt2 (глобальный текст: hash→строка) — проверено
 - [x] Heightmap (.dat: размеры/bbox/min-max высоты, RLE) — проверено
 - [x] Определение типа файла по расширению (`gamefile`, ~30 типов) — проверено
@@ -102,6 +104,7 @@
   - [x] Skeleton (кости: трансформации + parent/child индексы; теги отложены) — проверено
   - [x] ShaderParametersBlock (параметры материала: текстуры + Vector4 + хеши) — проверено
   - [x] Ydd (DrawableDictionary: хеши + массив Drawable) — проверено
+  - [x] Yft (FragType): заголовок фрагмента (bounding, gravity/buoyancy, glass count) + основной Drawable — проверено
   - [ ] Joints / Bounds (коллизия); Yft (Fragment)- [ ] Карты: Ymap/Ytyp
 - [ ] Остальные ~35 форматов
 
