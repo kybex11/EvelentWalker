@@ -23,6 +23,7 @@ namespace evw::app
                 m.positions = geom.vertexBuffer->extractPositions();
                 m.normals = geom.vertexBuffer->extractNormals();
                 m.texCoords = geom.vertexBuffer->extractTexCoords0();
+                m.colors = geom.vertexBuffer->extractColours0();
             }
             if (geom.indexBuffer)
                 m.indices = geom.indexBuffer->indices;
@@ -94,5 +95,31 @@ namespace evw::app
             }
         }
         return rm;
+    }
+
+    ModelBounds computeBounds(const RenderModel& model)
+    {
+        ModelBounds b;
+        float lo = 3.4e38f;
+        math::Vector3 mn{lo, lo, lo}, mx{-lo, -lo, -lo};
+        for (const auto& mesh : model.meshes)
+        {
+            for (const auto& p : mesh.positions)
+            {
+                mn.X = (p.X < mn.X) ? p.X : mn.X;
+                mn.Y = (p.Y < mn.Y) ? p.Y : mn.Y;
+                mn.Z = (p.Z < mn.Z) ? p.Z : mn.Z;
+                mx.X = (p.X > mx.X) ? p.X : mx.X;
+                mx.Y = (p.Y > mx.Y) ? p.Y : mx.Y;
+                mx.Z = (p.Z > mx.Z) ? p.Z : mx.Z;
+                b.valid = true;
+            }
+        }
+        if (!b.valid) return b;
+        b.min = mn; b.max = mx;
+        b.center = math::Vector3((mn.X + mx.X) * 0.5f, (mn.Y + mx.Y) * 0.5f, (mn.Z + mx.Z) * 0.5f);
+        math::Vector3 ext(mx.X - b.center.X, mx.Y - b.center.Y, mx.Z - b.center.Z);
+        b.radius = ext.Length();
+        return b;
     }
 }

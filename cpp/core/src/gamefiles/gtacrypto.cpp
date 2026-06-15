@@ -1,10 +1,12 @@
 #include "evw/gamefiles/gtacrypto.h"
 
 #include <cstring>
+#include <fstream>
 #include <stdexcept>
 
 #include "evw/gamefiles/aes.h"
 #include "evw/gamefiles/dotnet_random.h"
+#include "evw/gamefiles/hashsearch.h"
 #include "evw/gamefiles/inflate.h"
 #include "evw/gamefiles/jenk.h"
 
@@ -68,6 +70,8 @@ namespace evw::gamefiles
 
     const std::vector<uint8_t>& GTA5Keys::getNGKey(const std::string& name, uint32_t length) const
     {
+        if (PC_NG_KEYS.empty() || PC_LUT.size() < 256)
+            throw std::runtime_error("GTA5 NG keys not loaded (need Keys folder / magic.dat)");
         uint32_t hash = calculateHash(name, PC_LUT);
         uint32_t keyidx = (hash + length + (101 - 40)) % 0x65;
         return PC_NG_KEYS[keyidx];
@@ -144,6 +148,62 @@ namespace evw::gamefiles
         loadFromMagicBlob(blob);
     }
 
+    bool GTA5Keys::loadFromKeysFolder(const std::string& folder)
+    {
+        auto readFile = [](const std::string& path, std::vector<uint8_t>& out) -> bool {
+            std::ifstream f(path, std::ios::binary | std::ios::ate);
+            if (!f) return false;
+            std::streamsize n = f.tellg();
+            if (n <= 0) return false;
+            f.seekg(0);
+            out.resize(static_cast<size_t>(n));
+            return static_cast<bool>(f.read(reinterpret_cast<char*>(out.data()), n));
+        };
+
+        std::string base = folder;
+        if (!base.empty() && base.back() != '\\' && base.back() != '/') base += '\\';
+
+        std::vector<uint8_t> aes, ngKeys, tables, lut, awc;
+        if (!readFile(base + "gtav_aes_key.dat", aes) || aes.size() != 32) return false;
+        if (!readFile(base + "gtav_ng_key.dat", ngKeys) || ngKeys.size() != 27472) return false;
+        if (!readFile(base + "gtav_ng_decrypt_tables.dat", tables) || tables.size() != 278528) return false;
+        if (!readFile(base + "gtav_hash_lut.dat", lut) || lut.size() != 256) return false;
+        if (!readFile(base + "gtav_awc_key.dat", awc) || awc.size() != 16) awc.assign(16, 0);
+
+        // Assemble into the magic-blob layout and unpack.
+        std::vector<uint8_t> blob;
+        blob.reserve(ngKeys.size() + tables.size() + lut.size() + awc.size());
+        blob.insert(blob.end(), ngKeys.begin(), ngKeys.end());
+        blob.insert(blob.end(), tables.begin(), tables.end());
+        blob.insert(blob.end(), lut.begin(), lut.end());
+        blob.insert(blob.end(), awc.begin(), awc.end());
+
+        loadFromMagicBlob(blob);
+        PC_AES_KEY = aes;
+        return true;
+    }
+
+    bool GTA5Keys::loadAesKeyFromExe(const std::string& exePath)
+    {
+        std::ifstream f(exePath, std::ios::binary | std::ios::ate);
+        if (!f) return false;
+        std::streamsize n = f.tellg();
+        if (n <= 0) return false;
+        f.seekg(0);
+        std::vector<uint8_t> exe(static_cast<size_t>(n));
+        if (!f.read(reinterpret_cast<char*>(exe.data()), n)) return false;
+
+        // Known SHA-1 of the 32-byte PC AES key (GTA5KeyHashes.PC_AES_KEY_HASH).
+        static const std::array<uint8_t, 20> AES_KEY_HASH = {
+            0xA0, 0x79, 0x61, 0x28, 0xA7, 0x75, 0x72, 0x0A, 0xC2, 0x04,
+            0xD9, 0x81, 0x9F, 0x68, 0xC1, 0x72, 0xE3, 0x95, 0x2C, 0x6D};
+
+        auto key = hashSearchOne(exe, AES_KEY_HASH, 0x20);
+        if (key.size() != 32) return false;
+        PC_AES_KEY = std::move(key);
+        return true;
+    }
+
     namespace GTACrypto
     {
         std::vector<uint8_t> DecryptAESData(const std::vector<uint8_t>& data,
@@ -164,6 +224,9 @@ namespace evw::gamefiles
                                        const std::vector<uint8_t>& key,
                                        const GTA5Keys& keys)
         {
+            if (!keys.ngTablesLoaded || key.size() < 4)
+                throw std::runtime_error("GTA5 NG decrypt tables not loaded");
+
             std::vector<uint8_t> out(data.size());
 
             // Reinterpret key bytes as little-endian uint32 array (key length / 4).

@@ -24,6 +24,7 @@ namespace evw::gamefiles
         Ypt,        // particle effects
         Ynv,        // nav mesh
         Ynd,        // path nodes
+        Ypdb,       // pose matcher database
         Yvr,        // vehicle record
         Ywr,        // waypoint record
         Yfd,        // frame filter dictionary
@@ -38,6 +39,9 @@ namespace evw::gamefiles
         Fxc,        // shaders
         Cut,        // cutscene
         Mrf,        // move network
+        Gtxd,       // texture parent mapping
+        DistantLights, // distant lights grid
+        Watermap,   // water map
         Heightmap,  // .dat heightmap
         Dds,        // texture
         Xml,        // xml

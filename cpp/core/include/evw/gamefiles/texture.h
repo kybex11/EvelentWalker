@@ -28,6 +28,9 @@ namespace evw::gamefiles
         D3DFMT_BC7 = 0x20374342,
     };
 
+    // Human-readable name of a texture format.
+    const char* textureFormatName(TextureFormat format);
+
     // Graphics-segment block holding the raw (mip-chained) pixel data.
     struct TextureData
     {

@@ -1,5 +1,7 @@
 #include "evw/gamefiles/jenk.h"
 
+#include <fstream>
+
 namespace evw::gamefiles
 {
     namespace
@@ -72,6 +74,23 @@ namespace evw::gamefiles
         size_t added = 0;
         for (const auto& s : strings)
             if (!Ensure(s)) ++added;
+        return added;
+    }
+
+    size_t JenkIndex::LoadStringsFromFile(const std::string& path)
+    {
+        std::ifstream f(path);
+        if (!f) return 0;
+        size_t added = 0;
+        std::string line;
+        while (std::getline(f, line))
+        {
+            // Trim trailing CR/whitespace.
+            while (!line.empty() && (line.back() == '\r' || line.back() == '\n' ||
+                                     line.back() == ' ' || line.back() == '\t'))
+                line.pop_back();
+            if (!line.empty() && !Ensure(line)) ++added;
+        }
         return added;
     }
 

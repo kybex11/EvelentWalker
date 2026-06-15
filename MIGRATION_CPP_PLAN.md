@@ -94,12 +94,52 @@
 - [x] Rel (аудио данные): тип, data-блок, name table, индекс (hash/string), hash/pack таблицы — проверено
 - [x] Ycd (ClipDictionary): структура-заголовок + массив указателей клипов — проверено
 - [x] Ypt (ParticleEffectsList/ptxFxList): pgBase заголовок + имя + указатели суб-словарей — проверено
+- [x] DistantLights (.dat, big-endian): сетка ночных огней HD/non-HD, узлы + пути — проверено
+- [x] Watermap ('WMAP', big-endian): заголовок + comp-headers + реки/озёра/бассейны — проверено
+- [x] CacheDat (cache_y*.dat): версия + fileDates + модуль BoundsStore (32б items) — проверено
+- [x] Gtxd (CMapParentTxds через RBF): карта child→parent TXD — проверено
 - [x] Gxt2 (глобальный текст: hash→строка) — проверено
 - [x] Heightmap (.dat: размеры/bbox/min-max высоты, RLE) — проверено
 - [x] Определение типа файла по расширению (`gamefile`, ~31 тип, +Mrf) — проверено
 - [x] PSO типизированный доступ к значениям по блоку+смещению поля (big-endian) — проверено
+- [x] PSO PSCH парсинг enum-определений (type==1: nameHash→ключи) — проверено
 - [x] JenkIndex массовая индексация (`EnsureAll`) — проверено
 - [x] RBF → XML экспорт (`rbf_xml`) — проверено
+- [x] Meta → XML экспорт (`meta_xml`): структуры/скаляры/векторы/хеши/enum/массивы + имена через JenkIndex — проверено
+- [x] PSO → XML экспорт (`pso_xml`): схемо-управляемая сериализация полей + enum-имена — проверено
+- [x] XML-билдер общий (`xml_builder`): экранирование, отступы, теги — используется meta/pso xml
+- [x] Эксплорер: превью Meta/PSO/RBF/Ymap/Ytyp с полным XML (`ExplorerModel::getXml`) — собирается
+- [x] CLI: команды `xml` (дамп в XML) и `meta` (инспектор структур) — собирается
+- [x] Yed/Yfd/Yld (Expression/FrameFilter/Cloth dictionaries): base + имена-хеши + счётчик items — проверено (Yfd)
+- [x] Рендер .yft (FragType.drawable) и .ydd (drawable по индексу) — `buildFragment/DictionaryRenderModel`, собирается
+- [x] GUI: рендер .yft/.ydd во вьюпорте + панель XML-дампа Meta/PSO/RBF с кнопкой «Save XML» — собирается (build-gui)
+- [x] Исправлен краш «vector subscript out of range»: безопасное построение дерева RPF
+      (беззнаковые индексы, clamp диапазонов, visited-защита от циклов) + проверка размера TOC — проверено
+- [x] Навигационная модель эксплорера: виртуальное дерево папок/архивов из путей записей
+      (`listChildren`/`isDirectory`), тип+размер записей — проверено
+- [x] GUI 1:1 со стилем EvelentWalker/CodeWalker: меню (File/View/Help), тулбар (папка/Scan/Up/путь/поиск),
+      левое дерево архивов + список с колонками Name/Type/Size + панель превью + статус-бар + About — собирается
+- [x] Загрузка ключей GTA5 из папки `Keys` (CodeWalker-формат: aes/ng_key/decrypt_tables/hash_lut)
+      — `GTA5Keys::loadFromKeysFolder` + автозагрузка в эксплорере/CLI, статус ключей в GUI — проверено
+- [x] Исправлен повторный краш: NG/AES-расшифровка без ключей бросает ловимое исключение
+      (вместо индексации пустых `PC_NG_KEYS`/`PC_LUT`); зашифрованный архив без ключей пропускается — проверено
+- [x] SHA-1 (FIPS 180-1) — проверен по эталонным векторам ("", "abc", 56-байт)
+- [x] HashSearch (поиск ключевых блоков по SHA-1, 8-байтное выравнивание, многопоточно) — проверено
+- [x] Извлечение AES-ключа из `gta5.exe` по известному SHA-1 (`loadAesKeyFromExe`) + фолбэк в эксплорере/CLI — проверено
+      (NG-ключи/таблицы пока требуют папку `Keys`/magic.dat — для них нужна полная таблица из 374 SHA-1 хешей)
+- [x] Извлечение файлов на диск из эксплорера/GUI (`ExplorerModel::extractToFile` + кнопка Extract) — проверено
+- [x] CLI: команда `tree` (листинг виртуальной папки с типами/иконками каталогов) — собирается
+- [x] Ypdb (pose matcher database): заголовок (marker/versions/signature/samples) + тип файла — проверено
+- [x] Heightmap → PGM экспорт (`HeightmapFile::toPGM`) — проверено
+- [x] Fxc (компилированные шейдеры 'rgxe'): заголовок + vertexType + preset-параметры + тип файла — проверено
+- [x] PSO → XML: рекурсия вложенных inline-структур (тип Structure) — проверено
+- [x] Эксплорер: превью .fxc (vertexType + preset params) и .ypdb — собирается
+- [x] Рендер: цвета вершин в `RenderMesh.colors` + `computeBounds` (AABB/центр/радиус для камеры) — проверено
+- [x] Текстуры: декод L8/A8/A1R5G5B5 + BC4(ATI1)→grayscale, `textureFormatName` — проверено
+- [x] JenkIndex: `LoadStringsFromFile` (вордлист для резолва хешей) — проверено
+- [x] Heightmap: `toPGMMin` (мин-высоты в PGM) — проверено
+- [x] CLI: команды `hash <string>` и `types <folder>` (счётчик типов записей) — собирается
+- [x] GUI: рендер словаря .ydd с выбором индекса drawable, превью текстур .ytd (D3D11 SRV из RGBA, переключение текстур) — собирается
 - [x] Ymap (карты мира): CMapData / CEntityDef через Meta + массив указателей — проверено
 - [x] Ytyp (архетипы): CMapTypes / CBaseArchetypeDef — связь entity→архетип→drawable/texture — проверено
 - [ ] gen9-вариант текстур (Enhanced)

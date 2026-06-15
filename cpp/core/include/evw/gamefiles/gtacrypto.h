@@ -40,6 +40,20 @@ namespace evw::gamefiles
         // Full magic.dat pipeline: de-scramble with .NET Random(seed=Jenk(aesKey)),
         // AES-decrypt, raw-inflate, then unpack. `magic` is the raw resource bytes.
         void loadFromMagic(const std::vector<uint8_t>& magic, const std::vector<uint8_t>& aesKey);
+
+        // Loads keys from a folder of CodeWalker-format .dat files:
+        //   gtav_aes_key.dat (32), gtav_ng_key.dat (27472),
+        //   gtav_ng_decrypt_tables.dat (278528), gtav_hash_lut.dat (256),
+        //   gtav_awc_key.dat (16, optional). Returns true on success.
+        bool loadFromKeysFolder(const std::string& folder);
+
+        // Searches gta5.exe for the AES key by its known SHA-1 and stores it.
+        // Returns true if found. NG keys/tables still need a Keys folder/magic.dat,
+        // but this enables AES-encrypted archives and lays the exe-extraction base.
+        bool loadAesKeyFromExe(const std::string& exePath);
+
+        // True once NG keys + tables are available (real archives can be read).
+        bool isLoaded() const { return ngTablesLoaded && !PC_NG_KEYS.empty(); }
     };
 
     namespace GTACrypto

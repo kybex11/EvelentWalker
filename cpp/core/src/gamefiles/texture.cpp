@@ -134,3 +134,25 @@ namespace evw::gamefiles
         return td;
     }
 }
+
+namespace evw::gamefiles
+{
+    const char* textureFormatName(TextureFormat format)
+    {
+        switch (format)
+        {
+        case TextureFormat::D3DFMT_A8R8G8B8: return "A8R8G8B8";
+        case TextureFormat::D3DFMT_A1R5G5B5: return "A1R5G5B5";
+        case TextureFormat::D3DFMT_A8:       return "A8";
+        case TextureFormat::D3DFMT_A8B8G8R8: return "A8B8G8R8";
+        case TextureFormat::D3DFMT_L8:       return "L8";
+        case TextureFormat::D3DFMT_DXT1:     return "DXT1";
+        case TextureFormat::D3DFMT_DXT3:     return "DXT3";
+        case TextureFormat::D3DFMT_DXT5:     return "DXT5";
+        case TextureFormat::D3DFMT_ATI1:     return "ATI1";
+        case TextureFormat::D3DFMT_ATI2:     return "ATI2";
+        case TextureFormat::D3DFMT_BC7:      return "BC7";
+        default:                             return "UNKNOWN";
+        }
+    }
+}

@@ -106,6 +106,12 @@ namespace evw::gamefiles
         if (version_ != 0x52504637u)
             throw std::runtime_error("Invalid RPF - not GTAV (bad version)");
 
+        // The table of contents (entries + names) must fit inside the archive.
+        // Reject corrupt headers early to avoid huge/overflowing allocations.
+        const uint64_t tocSize = 16ull + static_cast<uint64_t>(entryCount_) * 16ull + namesLength_;
+        if (fileSize_ > 0 && tocSize > static_cast<uint64_t>(fileSize_))
+            throw std::runtime_error("Invalid RPF - TOC larger than file");
+
         std::vector<uint8_t> entriesData(static_cast<size_t>(entryCount_) * 16);
         std::vector<uint8_t> namesData(namesLength_);
         src.readAt(startPos_ + 16, entriesData.data(), entriesData.size());
@@ -117,12 +123,16 @@ namespace evw::gamefiles
         case RpfEncryption::OPEN:
             break;
         case RpfEncryption::AES:
+            if (keys.PC_AES_KEY.size() != 32)
+                throw std::runtime_error("RPF is AES-encrypted but no keys are loaded");
             entriesData = GTACrypto::DecryptAESData(entriesData, keys.PC_AES_KEY);
             namesData = GTACrypto::DecryptAESData(namesData, keys.PC_AES_KEY);
             isAESEncrypted_ = true;
             break;
         case RpfEncryption::NG:
         default:
+            if (!keys.isLoaded())
+                throw std::runtime_error("RPF is NG-encrypted but no keys are loaded");
             entriesData = GTACrypto::DecryptNG(entriesData, name_, static_cast<uint32_t>(fileSize_), keys);
             namesData = GTACrypto::DecryptNG(namesData, name_, static_cast<uint32_t>(fileSize_), keys);
             isNGEncrypted_ = (encryption_ == RpfEncryption::NG);
@@ -200,23 +210,34 @@ namespace evw::gamefiles
 
         if (allEntries_.empty()) return;
 
-        // Build the tree (assign parents and paths) via the directory entry ranges.
+        // Build the tree (assign parents and paths) via the directory entry
+        // ranges. These indices come straight from the (possibly garbage, when
+        // an archive is encrypted and no keys are loaded) TOC, so every access
+        // is bounds-checked and a visited set prevents cycles/infinite loops.
         allEntries_[0].path = path_;
+        std::vector<uint8_t> visited(allEntries_.size(), 0);
         std::vector<int> stack{0};
+        visited[0] = 1;
         while (!stack.empty())
         {
             int idx = stack.back();
             stack.pop_back();
             const RpfEntry parent = allEntries_[idx]; // copy of fields we need
-            int starti = static_cast<int>(parent.entriesIndex);
-            int endi = static_cast<int>(parent.entriesIndex + parent.entriesCount);
-            for (int i = starti; i < endi && i < static_cast<int>(allEntries_.size()); ++i)
+            uint64_t starti = parent.entriesIndex;
+            uint64_t endi = starti + parent.entriesCount;
+            const uint64_t count = allEntries_.size();
+            if (starti >= count) continue;            // garbage range -> skip
+            if (endi > count) endi = count;            // clamp
+            for (uint64_t i = starti; i < endi; ++i)
             {
-                RpfEntry& e = allEntries_[i];
+                RpfEntry& e = allEntries_[static_cast<size_t>(i)];
                 e.parent = idx;
                 e.path = allEntries_[idx].path + "\\" + e.nameLower;
-                if (e.type == RpfEntryType::Directory)
-                    stack.push_back(i);
+                if (e.type == RpfEntryType::Directory && !visited[static_cast<size_t>(i)])
+                {
+                    visited[static_cast<size_t>(i)] = 1;
+                    stack.push_back(static_cast<int>(i));
+                }
             }
         }
     }

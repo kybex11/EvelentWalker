@@ -171,6 +171,39 @@ namespace evw::texconv
         return img;
     }
 
+    std::vector<uint8_t> decompressBC4(const std::vector<uint8_t>& data, int width, int height)
+    {
+        std::vector<uint8_t> img(static_cast<size_t>(width) * height * 4, 0);
+        Cursor c{data.data(), data.size()};
+        int bx = (width + 3) / 4, by = (height + 3) / 4;
+        for (int y = 0; y < by; ++y)
+            for (int x = 0; x < bx; ++x)
+            {
+                uint8_t v0 = c.u8(), v1 = c.u8();
+                uint8_t vals[8];
+                vals[0] = v0; vals[1] = v1;
+                if (v0 > v1)
+                    for (int i = 1; i < 7; ++i) vals[i + 1] = static_cast<uint8_t>(((7 - i) * v0 + i * v1) / 7);
+                else
+                {
+                    for (int i = 1; i < 5; ++i) vals[i + 1] = static_cast<uint8_t>(((5 - i) * v0 + i * v1) / 5);
+                    vals[6] = 0; vals[7] = 255;
+                }
+                uint8_t idx[6];
+                for (int i = 0; i < 6; ++i) idx[i] = c.u8();
+                uint64_t bits = 0;
+                for (int i = 0; i < 6; ++i) bits |= static_cast<uint64_t>(idx[i]) << (8 * i);
+                for (int yy = 0; yy < 4; ++yy)
+                    for (int xx = 0; xx < 4; ++xx)
+                    {
+                        int sel = static_cast<int>((bits >> (3 * (yy * 4 + xx))) & 0x7);
+                        uint8_t g = vals[sel];
+                        putPixel(img, width, height, x * 4 + xx, y * 4 + yy, g, g, g, 255);
+                    }
+            }
+        return img;
+    }
+
     std::vector<uint8_t> decodeToRGBA(const Texture& texture)
     {
         if (!texture.data || texture.data->fullData.empty()) return {};
@@ -181,6 +214,7 @@ namespace evw::texconv
         case TextureFormat::D3DFMT_DXT1: return decompressDxt1(d, w, h);
         case TextureFormat::D3DFMT_DXT3: return decompressDxt3(d, w, h);
         case TextureFormat::D3DFMT_DXT5: return decompressDxt5(d, w, h);
+        case TextureFormat::D3DFMT_ATI1: return decompressBC4(d, w, h);
         case TextureFormat::D3DFMT_A8R8G8B8:
         case TextureFormat::D3DFMT_A8B8G8R8:
         {
@@ -189,8 +223,51 @@ namespace evw::texconv
             if (d.size() >= need) return std::vector<uint8_t>(d.begin(), d.begin() + need);
             return d;
         }
+        case TextureFormat::D3DFMT_L8:
+        {
+            // 8-bit luminance -> grayscale RGBA.
+            size_t need = static_cast<size_t>(w) * h;
+            if (d.size() < need) return {};
+            std::vector<uint8_t> out(need * 4);
+            for (size_t i = 0; i < need; ++i)
+            {
+                uint8_t g = d[i];
+                out[i * 4] = g; out[i * 4 + 1] = g; out[i * 4 + 2] = g; out[i * 4 + 3] = 255;
+            }
+            return out;
+        }
+        case TextureFormat::D3DFMT_A8:
+        {
+            // 8-bit alpha -> white with alpha (and grayscale for visibility).
+            size_t need = static_cast<size_t>(w) * h;
+            if (d.size() < need) return {};
+            std::vector<uint8_t> out(need * 4);
+            for (size_t i = 0; i < need; ++i)
+            {
+                uint8_t a = d[i];
+                out[i * 4] = a; out[i * 4 + 1] = a; out[i * 4 + 2] = a; out[i * 4 + 3] = a;
+            }
+            return out;
+        }
+        case TextureFormat::D3DFMT_A1R5G5B5:
+        {
+            // 16-bit 1-5-5-5 -> RGBA8.
+            size_t px = static_cast<size_t>(w) * h;
+            if (d.size() < px * 2) return {};
+            std::vector<uint8_t> out(px * 4);
+            for (size_t i = 0; i < px; ++i)
+            {
+                uint16_t v = static_cast<uint16_t>(d[i * 2] | (d[i * 2 + 1] << 8));
+                uint8_t a = (v & 0x8000) ? 255 : 0;
+                uint8_t r = static_cast<uint8_t>(((v >> 10) & 0x1F) * 255 / 31);
+                uint8_t g = static_cast<uint8_t>(((v >> 5) & 0x1F) * 255 / 31);
+                uint8_t b = static_cast<uint8_t>((v & 0x1F) * 255 / 31);
+                out[i * 4] = r; out[i * 4 + 1] = g; out[i * 4 + 2] = b; out[i * 4 + 3] = a;
+            }
+            return out;
+        }
         default:
-            return {}; // unsupported here (ATI1/2, BC7, 16-bit)
+            return {}; // unsupported here (ATI1/2, BC7, other 16-bit)
         }
     }
 }

@@ -8,8 +8,11 @@
 #include "evw/gamefiles/aes.h"
 #include "evw/gamefiles/awc.h"
 #include "evw/gamefiles/bounds.h"
+#include "evw/gamefiles/cachedat.h"
 #include "evw/gamefiles/clip.h"
+#include "evw/gamefiles/distantlights.h"
 #include "evw/gamefiles/gamefile.h"
+#include "evw/gamefiles/gtxd.h"
 #include "evw/gamefiles/gxt2.h"
 #include "evw/gamefiles/heightmap.h"
 #include "evw/gamefiles/mrf.h"
@@ -21,19 +24,27 @@
 #include "evw/gamefiles/rbf_xml.h"
 #include "evw/gamefiles/records.h"
 #include "evw/gamefiles/rel.h"
+#include "evw/gamefiles/watermap.h"
+#include "evw/gamefiles/ypdb.h"
 #include "evw/gamefiles/data.h"
 #include "evw/gamefiles/dotnet_random.h"
 #include "evw/gamefiles/gtacrypto.h"
+#include "evw/gamefiles/hashsearch.h"
 #include "evw/gamefiles/inflate.h"
 #include "evw/gamefiles/jenk.h"
+#include "evw/gamefiles/sha1.h"
 #include "evw/gamefiles/ddsio.h"
+#include "evw/gamefiles/dictionaries.h"
 #include "evw/gamefiles/drawable.h"
 #include "evw/gamefiles/dxt_decode.h"
 #include "evw/gamefiles/frag.h"
+#include "evw/gamefiles/fxc.h"
 #include "evw/gamefiles/geometry.h"
 #include "evw/gamefiles/meta.h"
+#include "evw/gamefiles/meta_xml.h"
 #include "evw/gamefiles/metatypes.h"
 #include "evw/gamefiles/model.h"
+#include "evw/gamefiles/pso_xml.h"
 #include "evw/gamefiles/resource_data.h"
 #include "evw/gamefiles/rpf.h"
 #include "evw/gamefiles/rpf_manager.h"
@@ -178,6 +189,7 @@ static void testNgDecrypt()
     for (auto& round : keys.PC_NG_DECRYPT_TABLES)
         for (auto& col : round)
             col.fill(0);
+    keys.ngTablesLoaded = true; // synthetic tables present for this test
     // For round A: x_n built from table[g*4 + j][data[..]] across 4 input bytes.
     // We set tables so that output equals a deterministic function; here we
     // only check the transform is stable and reversible-as-implemented by
@@ -232,6 +244,102 @@ static void testDotNetRandom()
     std::vector<uint8_t> got(16);
     rnd.nextBytes(got);
     check(got == expected, "DotNetRandom matches .NET System.Random output");
+}
+
+static void testSha1()
+{
+    std::printf("[sha1] FIPS-180-1 known-answer vectors\n");
+    using namespace evw::crypto;
+
+    auto hex = [](const std::array<uint8_t, 20>& d) {
+        std::string s;
+        const char* H = "0123456789abcdef";
+        for (uint8_t b : d) { s.push_back(H[b >> 4]); s.push_back(H[b & 0xF]); }
+        return s;
+    };
+
+    auto d1 = sha1(std::vector<uint8_t>{});
+    check(hex(d1) == "da39a3ee5e6b4b0d3255bfef95601890afd80709", "SHA1(\"\")");
+
+    std::string abc = "abc";
+    auto d2 = sha1(reinterpret_cast<const uint8_t*>(abc.data()), abc.size());
+    check(hex(d2) == "a9993e364706816aba3e25717850c26c9cd0d89d", "SHA1(\"abc\")");
+
+    std::string longer = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+    auto d3 = sha1(reinterpret_cast<const uint8_t*>(longer.data()), longer.size());
+    check(hex(d3) == "84983e441c3bd26ebaae4aa1f95129e5e54670f1", "SHA1(56-byte vector)");
+}
+
+static void testHashSearch()
+{
+    std::printf("[hashsearch] locate key block by SHA-1 at 8-byte alignment\n");
+    using namespace evw::gamefiles;
+
+    // Hide a known 32-byte block at an 8-aligned offset inside a larger buffer.
+    std::vector<uint8_t> hay(4096, 0xCD);
+    std::vector<uint8_t> needle(32);
+    for (int i = 0; i < 32; ++i) needle[i] = static_cast<uint8_t>(i * 7 + 1);
+    const size_t at = 2048; // 8-aligned
+    std::copy(needle.begin(), needle.end(), hay.begin() + at);
+
+    auto target = evw::crypto::sha1(needle);
+    auto found = hashSearchOne(hay, target, 32);
+    check(found.size() == 32, "block found");
+    check(found == needle, "found block matches the needle");
+
+    // A hash that isn't present returns empty.
+    std::array<uint8_t, 20> bogus{};
+    bogus[0] = 0xFF;
+    check(hashSearchOne(hay, bogus, 32).empty(), "absent hash returns empty");
+}
+
+static void testKeysFolder()
+{
+    std::printf("[keys] load keys from CodeWalker-format folder\n");
+    using namespace evw::gamefiles;
+    namespace fs = std::filesystem;
+
+    fs::path dir = fs::temp_directory_path() / "evw_keys_test";
+    std::error_code ec;
+    fs::remove_all(dir, ec);
+    fs::create_directories(dir, ec);
+
+    auto writeBytes = [&](const char* name, size_t n, uint8_t fill) {
+        std::vector<uint8_t> b(n);
+        for (size_t i = 0; i < n; ++i) b[i] = static_cast<uint8_t>((i * 13 + fill) & 0xFF);
+        std::ofstream o((dir / name).string(), std::ios::binary);
+        o.write(reinterpret_cast<const char*>(b.data()), static_cast<std::streamsize>(b.size()));
+    };
+    writeBytes("gtav_aes_key.dat", 32, 1);
+    writeBytes("gtav_ng_key.dat", 27472, 2);
+    writeBytes("gtav_ng_decrypt_tables.dat", 278528, 3);
+    writeBytes("gtav_hash_lut.dat", 256, 4);
+    // No awc key file -> loader pads with zeros.
+
+    GTA5Keys keys;
+    bool ok = keys.loadFromKeysFolder(dir.string());
+    check(ok, "keys folder loaded");
+    check(keys.isLoaded(), "isLoaded true after folder load");
+    check(keys.PC_AES_KEY.size() == 32, "AES key 32 bytes");
+    check(keys.PC_NG_KEYS.size() == 101 && keys.PC_NG_KEYS[0].size() == 272, "101 NG keys");
+    check(keys.PC_LUT.size() == 256, "LUT 256 bytes");
+    check(keys.ngTablesLoaded, "decrypt tables loaded");
+
+    // Missing files -> graceful failure.
+    fs::path empty = fs::temp_directory_path() / "evw_keys_empty";
+    fs::remove_all(empty, ec); fs::create_directories(empty, ec);
+    GTA5Keys keys2;
+    check(!keys2.loadFromKeysFolder(empty.string()), "missing key files -> false");
+    check(!keys2.isLoaded(), "not loaded when files absent");
+
+    // Without keys, NG decryption must throw (not crash with OOB indexing).
+    bool threw = false;
+    try { (void)GTACrypto::DecryptNG(std::vector<uint8_t>(16, 0), "test.rpf", 16u, keys2); }
+    catch (const std::exception&) { threw = true; }
+    check(threw, "DecryptNG without keys throws a catchable exception");
+
+    fs::remove_all(dir, ec);
+    fs::remove_all(empty, ec);
 }
 
 static void testMagicBlobUnpack()
@@ -1277,6 +1385,27 @@ static void testExplorerModel()
     check(pv.kind == evw::app::PreviewKind::Binary, "binary preview kind");
     check(pv.dataSize == 10, "preview data size");
 
+    // Folder navigation tree: top level lists the archive; archive lists the file.
+    const auto& root = model.listChildren("");
+    bool hasArchive = false;
+    for (const auto& e : root) if (e.path == "data.rpf") { hasArchive = true; check(e.isDirectory, "archive is a directory node"); }
+    check(hasArchive, "top level lists data.rpf");
+    check(model.isDirectory("data.rpf"), "data.rpf is navigable");
+    const auto& inside = model.listChildren("data.rpf");
+    bool hasFile = false;
+    for (const auto& e : inside) if (e.name == "test.txt") { hasFile = true; check(!e.isDirectory && e.size == 10, "file size in listing"); }
+    check(hasFile, "archive lists test.txt");
+
+    // Extract a file to disk and verify its content round-trips.
+    fs::path outFile = dir / "extracted.txt";
+    size_t n = model.extractToFile("data.rpf\\test.txt", outFile.string());
+    check(n == 10, "extractToFile wrote 10 bytes");
+    {
+        std::ifstream in(outFile, std::ios::binary);
+        std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        check(content == "Hello RPF!", "extracted content matches");
+    }
+
     fs::remove_all(dir, ec);
 }
 
@@ -2073,6 +2202,522 @@ static void testMrfGameFileType()
     check(detectGameFileType("audio.rel") == GameFileType::Rel, "rel detected");
 }
 
+static void testDistantLights()
+{
+    std::printf("[distlights] distant-lights grid (HD)\n");
+    using namespace evw::gamefiles;
+
+    const uint32_t cellCount = 1024; // HD
+    DataWriter w(Endianess::BigEndian);
+    w.Write(static_cast<uint32_t>(2));  // NodeCount
+    w.Write(static_cast<uint32_t>(1));  // PathCount
+    for (uint32_t i = 0; i < cellCount; ++i) w.Write(static_cast<uint32_t>(0));      // PathIndices
+    for (uint32_t i = 0; i < cellCount; ++i) w.Write(static_cast<uint32_t>(0));      // PathCounts1
+    for (uint32_t i = 0; i < cellCount; ++i) w.Write(static_cast<uint32_t>(0));      // PathCounts2
+    // 2 nodes (6 bytes each)
+    w.Write(static_cast<int16_t>(10)); w.Write(static_cast<int16_t>(20)); w.Write(static_cast<int16_t>(30));
+    w.Write(static_cast<int16_t>(-1)); w.Write(static_cast<int16_t>(-2)); w.Write(static_cast<int16_t>(-3));
+    // 1 HD path
+    w.Write(static_cast<int16_t>(5));   // centerX
+    w.Write(static_cast<int16_t>(6));   // centerY
+    w.Write(static_cast<uint16_t>(7));  // sizeX
+    w.Write(static_cast<uint16_t>(8));  // sizeY
+    w.Write(static_cast<uint16_t>(0));  // nodeIndex
+    w.Write(static_cast<uint16_t>(2));  // nodeCount
+    w.Write(static_cast<uint16_t>(0));  // short7
+    w.Write(static_cast<uint16_t>(0));  // short8
+    w.Write(1.5f);                       // float1
+    w.Write(static_cast<uint8_t>(1)); w.Write(static_cast<uint8_t>(2));
+    w.Write(static_cast<uint8_t>(3)); w.Write(static_cast<uint8_t>(4));
+
+    DistantLightsFile dl;
+    check(dl.load(w.buffer(), true), "HD distant lights loads");
+    check(dl.cellCount() == 1024 && dl.gridSize() == 32, "HD grid sizing");
+    check(dl.nodeCount() == 2 && dl.nodes().size() == 2, "node count");
+    check(dl.nodes()[0].x == 10 && dl.nodes()[1].z == -3, "node coords");
+    check(dl.pathCount() == 1 && dl.paths().size() == 1, "path count");
+    check(dl.paths()[0].nodeCount == 2 && dl.paths()[0].float1 == 1.5f, "HD path fields");
+}
+
+static void testWatermap()
+{
+    std::printf("[wmap] water map header + pools\n");
+    using namespace evw::gamefiles;
+
+    DataWriter w(Endianess::BigEndian);
+    w.Write(static_cast<uint32_t>(0x574D4150)); // 'WMAP'
+    w.Write(static_cast<uint32_t>(100));         // version
+    w.Write(static_cast<uint32_t>(0));           // dataLength
+    w.Write(-4050.0f);                            // cornerX
+    w.Write(8400.0f);                             // cornerY
+    w.Write(50.0f);                               // tileX
+    w.Write(50.0f);                               // tileY
+    w.Write(static_cast<uint16_t>(2));           // width
+    w.Write(static_cast<uint16_t>(1));           // height
+    w.Write(static_cast<uint32_t>(0));           // watermapIndsCount
+    w.Write(static_cast<uint32_t>(0));           // watermapRefsCount
+    w.Write(static_cast<uint16_t>(0));           // riverVecsCount
+    w.Write(static_cast<uint16_t>(0));           // riverCount
+    w.Write(static_cast<uint16_t>(0));           // lakeVecsCount
+    w.Write(static_cast<uint16_t>(0));           // lakeCount
+    w.Write(static_cast<uint16_t>(1));           // poolCount
+    w.Write(static_cast<uint16_t>(0));           // coloursOffset
+    for (int i = 0; i < 8; ++i) w.Write(static_cast<uint8_t>(0)); // Unks1
+    // CompHeaders[height=1]
+    w.Write(static_cast<uint8_t>(0)); w.Write(static_cast<uint8_t>(0)); w.Write(static_cast<uint16_t>(0));
+    // inds(0) + refs(0). shortslen = 0 + height*4 = 4. padcount = (16-4%16)%16 = 12.
+    for (int i = 0; i < 12; ++i) w.Write(static_cast<uint8_t>(0)); // padding
+    // 1 pool (32-byte base): position vec3, unk04, size vec3, unk09
+    w.Write(1.0f); w.Write(2.0f); w.Write(3.0f); // position
+    w.Write(static_cast<uint32_t>(0));            // unk04
+    w.Write(4.0f); w.Write(5.0f); w.Write(6.0f); // size
+    w.Write(static_cast<uint32_t>(0));            // unk09
+
+    WatermapFile wm;
+    check(wm.load(w.buffer()), "watermap loads");
+    check(wm.version() == 100, "version");
+    check(wm.width() == 2 && wm.height() == 1, "dimensions");
+    check(wm.compHeaders().size() == 1, "1 comp header");
+    check(wm.pools().size() == 1, "1 pool");
+    check(wm.pools()[0].position.X == 1.0f && wm.pools()[0].size.Z == 6.0f, "pool vectors");
+
+    std::vector<uint8_t> bad(60, 0);
+    WatermapFile wm2;
+    check(!wm2.load(bad), "bad magic rejected");
+}
+
+static void testCacheDat()
+{
+    std::printf("[cachedat] version + fileDates + BoundsStore module\n");
+    using namespace evw::gamefiles;
+
+    DataWriter w(Endianess::LittleEndian);
+    // Version string in first 100 bytes.
+    std::string ver = "[VERSION]\nGTA5_cache_2\n";
+    for (char c : ver) w.Write(static_cast<uint8_t>(c));
+    while (w.buffer().size() < 100) w.Write(static_cast<uint8_t>(0));
+    auto wline = [&](const char* s) {
+        for (const char* p = s; *p; ++p) w.Write(static_cast<uint8_t>(*p));
+        w.Write(static_cast<uint8_t>(0x0A));
+    };
+    wline("<fileDates>");
+    wline("12345 67890 1");
+    wline("</fileDates>");
+    wline("BoundsStore");
+    w.Write(static_cast<uint32_t>(32)); // module length = 1 item
+    // BoundsStoreItem (32 bytes)
+    w.Write(static_cast<uint32_t>(0xCAFEBABE)); // name
+    w.Write(10.0f); w.Write(11.0f); w.Write(12.0f); // min
+    w.Write(20.0f); w.Write(21.0f); w.Write(22.0f); // max
+    w.Write(static_cast<uint32_t>(3));              // layer
+
+    CacheDatFile cd;
+    check(cd.load(w.buffer()), "cache dat loads");
+    check(cd.version() == "GTA5_cache_2", "version parsed");
+    check(cd.fileDates().size() == 1 && cd.fileDates()[0] == "12345 67890 1", "file date line");
+    check(cd.boundsStore().size() == 1, "1 bounds store item");
+    check(cd.boundsStore()[0].name == 0xCAFEBABEu, "bounds item name");
+    check(cd.boundsStore()[0].max.Y == 21.0f && cd.boundsStore()[0].layer == 3, "bounds item fields");
+}
+
+static void testGtxd()
+{
+    std::printf("[gtxd] CMapParentTxds RBF -> child->parent map\n");
+    using namespace evw::gamefiles;
+
+    DataWriter w; // little-endian RBF
+    auto wstr = [&](const char* s) {
+        for (const char* p = s; *p; ++p) w.Write(static_cast<uint8_t>(*p));
+    };
+    auto openStruct = [&](uint8_t idx, const char* name) {
+        w.Write(idx); w.Write(static_cast<uint8_t>(0x00));            // descriptorIndex, type=structure
+        w.Write(static_cast<int16_t>(static_cast<int16_t>(std::strlen(name)))); wstr(name);
+        w.Write(static_cast<int16_t>(0)); w.Write(static_cast<int16_t>(0)); w.Write(static_cast<int16_t>(0));
+    };
+    auto bytesNode = [&](const char* s) {
+        w.Write(static_cast<uint8_t>(0xFD)); w.Write(static_cast<uint8_t>(0xFF));
+        int32_t len = static_cast<int32_t>(std::strlen(s) + 1);
+        w.Write(len);
+        wstr(s); w.Write(static_cast<uint8_t>(0)); // null-terminated
+    };
+    auto closeTag = [&]() { w.Write(static_cast<uint8_t>(0xFF)); w.Write(static_cast<uint8_t>(0xFF)); };
+
+    w.Write(static_cast<int32_t>(0x30464252)); // "RBF0"
+    openStruct(0, "CMapParentTxds");
+    openStruct(1, "txdRelationships");
+    openStruct(2, "item");
+    openStruct(3, "parent"); bytesNode("vehicles_txd"); closeTag();
+    openStruct(4, "child");  bytesNode("car01_txd");    closeTag();
+    closeTag(); // item
+    closeTag(); // txdRelationships
+    closeTag(); // root
+
+    GtxdFile gtxd;
+    check(gtxd.loadRbf(w.buffer()), "gtxd RBF loads");
+    check(gtxd.relationships().size() == 1, "one relationship");
+    check(gtxd.parentOf("car01_txd") == "vehicles_txd", "child maps to parent");
+
+    std::vector<uint8_t> notrbf = {1, 2, 3, 4};
+    GtxdFile gtxd2;
+    check(!gtxd2.loadRbf(notrbf), "non-RBF rejected");
+}
+
+static void testPsoEnumSchema()
+{
+    std::printf("[pso] PSCH enum definition parsing\n");
+    using namespace evw::gamefiles;
+
+    DataWriter dw(Endianess::BigEndian);
+    // PSIN (minimal data section)
+    dw.Write(static_cast<uint32_t>(0x5053494E)); dw.Write(static_cast<uint32_t>(8));
+    // PSCH section: header(8) + count(4) + index(8) + enum payload
+    // index entry: nameHash + offset. offset is relative to the SECTION start.
+    // Layout within section: [0..8) ident+len, [8..12) count, [12..20) index, [20..) enum
+    uint32_t enumNameHash = 0x55667788;
+    // Build section body first to compute length.
+    DataWriter body(Endianess::BigEndian);
+    // (we will write ident+len then count/index/enum directly)
+    uint32_t sectionLen = 8 + 4 + 8 + (4 + 8 * 2); // hdr + count + 1 index + enum(typecount + 2 entries)
+    dw.Write(static_cast<uint32_t>(0x50534348)); // 'PSCH'
+    dw.Write(sectionLen);
+    dw.Write(static_cast<uint32_t>(1));          // count = 1
+    dw.Write(enumNameHash);                       // index nameHash
+    dw.Write(static_cast<int32_t>(20));           // index offset (within section)
+    // enum at offset 20: type(1)<<24 | entriesCount(2)
+    dw.Write(static_cast<uint32_t>((1u << 24) | 2u));
+    dw.Write(static_cast<uint32_t>(0xAAA1)); dw.Write(static_cast<int32_t>(100)); // entry 0
+    dw.Write(static_cast<uint32_t>(0xBBB2)); dw.Write(static_cast<int32_t>(200)); // entry 1
+
+    PsoFile pso;
+    check(pso.load(dw.buffer()), "PSO with enum loads");
+    check(pso.enums().size() == 1, "one enum parsed");
+    const PsoSchemaEnum* en = pso.findEnum(enumNameHash);
+    check(en != nullptr, "enum found by name hash");
+    if (en)
+    {
+        check(en->entries.size() == 2, "enum has 2 entries");
+        check(en->entries[0].entryNameHash == 0xAAA1u && en->entries[0].entryKey == 100, "enum entry 0");
+        check(en->entries[1].entryKey == 200, "enum entry 1");
+    }
+}
+
+static void testDictionaries()
+{
+    std::printf("[dict] Yed/Yfd/Yld name-keyed dictionaries\n");
+    using namespace evw::gamefiles;
+
+    // FrameFilterDictionary layout: base(16) + 4 u32 + SimpleList64<uint> hashes
+    // + PointerList64 header. Build a synthetic with 2 name hashes and 2 items.
+    DataWriter w;
+    w.setPosition(0x00);
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(1)); w.Write(static_cast<uint64_t>(0)); // base
+    w.setPosition(0x10);
+    w.Write(static_cast<uint32_t>(0)); w.Write(static_cast<uint32_t>(0));
+    w.Write(static_cast<uint32_t>(1)); w.Write(static_cast<uint32_t>(0)); // Unknown_10h..1Ch
+    // SimpleList64<uint> hashes at 0x20 -> data at 0x50 (2 hashes)
+    w.Write(static_cast<uint64_t>(0x50000050)); w.Write(static_cast<uint16_t>(2));
+    w.Write(static_cast<uint16_t>(2)); w.Write(static_cast<uint32_t>(0));
+    // PointerList64 header at 0x30 -> ptr table 0x60, count 2
+    w.Write(static_cast<uint64_t>(0x50000060)); w.Write(static_cast<uint16_t>(2));
+    w.Write(static_cast<uint16_t>(2)); w.Write(static_cast<uint32_t>(0));
+    // hashes at 0x50
+    w.setPosition(0x50);
+    w.Write(static_cast<uint32_t>(0x1111)); w.Write(static_cast<uint32_t>(0x2222));
+    // pointer table at 0x60 (not dereferenced by our header parse)
+    w.setPosition(0x60);
+    w.Write(static_cast<uint64_t>(0)); w.Write(static_cast<uint64_t>(0));
+
+    std::vector<uint8_t> data = w.buffer();
+    ResourceDataReader r(static_cast<uint32_t>(data.size()), 0, data);
+    auto fd = r.ReadBlock<FrameFilterDictionary>();
+    check(fd->nameHashes.size() == 2, "filter dict has 2 name hashes");
+    check(fd->nameHashes[0] == 0x1111u && fd->nameHashes[1] == 0x2222u, "filter hashes read");
+    check(fd->itemCount == 2, "filter item count");
+}
+
+static void testPsoXmlNested()
+{
+    std::printf("[psoxml] nested inline structure recursion\n");
+    using namespace evw::gamefiles;
+
+    JenkIndex::Clear();
+    JenkIndex::Ensure("CParent"); JenkIndex::Ensure("CChild");
+    JenkIndex::Ensure("pa"); JenkIndex::Ensure("sub"); JenkIndex::Ensure("cx");
+    uint32_t P = JenkHash::GenHash(std::string_view("CParent"));
+    uint32_t C = JenkHash::GenHash(std::string_view("CChild"));
+
+    DataWriter dw(Endianess::BigEndian);
+    // PSIN: header(8) + payload(8): uint=7 @0, float=3.5 @4
+    uint32_t fb; float f = 3.5f; std::memcpy(&fb, &f, 4);
+    dw.Write(static_cast<uint32_t>(0x5053494E)); dw.Write(static_cast<uint32_t>(16));
+    dw.Write(static_cast<uint32_t>(7)); dw.Write(fb);
+    // PMAP: rootId=1, 1 entry (P @ offset 0, len 8)
+    dw.Write(static_cast<uint32_t>(0x504D4150)); dw.Write(static_cast<uint32_t>(32));
+    dw.Write(static_cast<int32_t>(1)); dw.Write(static_cast<int16_t>(1)); dw.Write(static_cast<int16_t>(0));
+    dw.Write(P); dw.Write(static_cast<int32_t>(0)); dw.Write(static_cast<int32_t>(0)); dw.Write(static_cast<int32_t>(8));
+    // PSCH: count=2, index(2x8), struct P @28 (36b), struct C @64 (24b); len=88
+    dw.Write(static_cast<uint32_t>(0x50534348)); dw.Write(static_cast<uint32_t>(88));
+    dw.Write(static_cast<uint32_t>(2));
+    dw.Write(P); dw.Write(static_cast<int32_t>(28));
+    dw.Write(C); dw.Write(static_cast<int32_t>(64));
+    // struct P @28: 2 entries
+    dw.Write(static_cast<uint32_t>((0u << 24) | 2u)); dw.Write(static_cast<int32_t>(8)); dw.Write(static_cast<uint32_t>(0));
+    dw.Write(JenkHash::GenHash(std::string_view("pa")));  dw.Write(static_cast<uint8_t>(0x06)); dw.Write(static_cast<uint8_t>(0)); dw.Write(static_cast<uint16_t>(0)); dw.Write(static_cast<uint32_t>(0));
+    dw.Write(JenkHash::GenHash(std::string_view("sub"))); dw.Write(static_cast<uint8_t>(0x0c)); dw.Write(static_cast<uint8_t>(0)); dw.Write(static_cast<uint16_t>(4)); dw.Write(C);
+    // struct C @64: 1 entry (cx Float @0)
+    dw.Write(static_cast<uint32_t>((0u << 24) | 1u)); dw.Write(static_cast<int32_t>(4)); dw.Write(static_cast<uint32_t>(0));
+    dw.Write(JenkHash::GenHash(std::string_view("cx"))); dw.Write(static_cast<uint8_t>(0x07)); dw.Write(static_cast<uint8_t>(0)); dw.Write(static_cast<uint16_t>(0)); dw.Write(static_cast<uint32_t>(0));
+
+    PsoFile pso;
+    check(pso.load(dw.buffer()), "nested PSO loads");
+    check(pso.schema().size() == 2, "two schema structures");
+    std::string xml = psoToXml(pso);
+    auto has = [&](const char* s) { return xml.find(s) != std::string::npos; };
+    check(has("<CParent>"), "parent tag");
+    check(has("<pa value=\"7\""), "parent uint field");
+    check(has("<sub>"), "nested structure opened");
+    check(has("<cx value=\"3.5\""), "child float field via recursion");
+}
+
+static void testFxc()
+{
+    std::printf("[fxc] shader container header + preset params\n");
+    using namespace evw::gamefiles;
+    DataWriter w; // little-endian
+    w.Write(static_cast<uint32_t>(1702389618u)); // "rgxe"
+    w.Write(static_cast<uint32_t>(3));            // vertexType
+    w.Write(static_cast<uint8_t>(1));             // preset param count
+    // param: name "drawbucket" (len+1 prefix incl null), unused byte, value
+    const char* nm = "drawbucket";
+    uint8_t len = static_cast<uint8_t>(std::strlen(nm) + 1);
+    w.Write(len);
+    for (const char* p = nm; *p; ++p) w.Write(static_cast<uint8_t>(*p));
+    w.Write(static_cast<uint8_t>(0));             // null terminator
+    w.Write(static_cast<uint8_t>(0));             // Unused0
+    w.Write(static_cast<uint32_t>(2));            // value
+
+    FxcFile fxc;
+    check(fxc.load(w.buffer()), "fxc loads");
+    check(fxc.vertexType() == 3, "vertex type");
+    check(fxc.presetParams().size() == 1, "one preset param");
+    check(fxc.presetParams()[0].name == "drawbucket", "param name");
+    check(fxc.presetParams()[0].value == 2, "param value");
+
+    std::vector<uint8_t> bad(16, 0);
+    FxcFile fxc2;
+    check(!fxc2.load(bad), "bad magic rejected");
+}
+
+static void testYpdb()
+{
+    std::printf("[ypdb] pose-matcher database header\n");
+    using namespace evw::gamefiles;
+    DataWriter w; // little-endian
+    w.Write(static_cast<uint8_t>(0x1A));          // binary marker
+    w.Write(static_cast<int32_t>(2));             // serializerVersion
+    w.Write(static_cast<int32_t>(0));             // poseMatcherVersion
+    w.Write(static_cast<uint32_t>(0xABCD1234));   // signature
+    w.Write(static_cast<int32_t>(0));             // samplesCount
+
+    YpdbFile y;
+    check(y.load(w.buffer()), "ypdb loads");
+    check(y.serializerVersion() == 2, "serializer version");
+    check(y.signature() == 0xABCD1234u, "signature");
+    check(y.samplesCount() == 0, "samples count");
+
+    std::vector<uint8_t> bad = {0x00, 1, 2, 3};
+    YpdbFile y2;
+    check(!y2.load(bad), "bad marker rejected");
+}
+
+static void testJenkLoadFile()
+{
+    std::printf("[jenk] LoadStringsFromFile wordlist\n");
+    using namespace evw::gamefiles;
+    namespace fs = std::filesystem;
+    JenkIndex::Clear();
+    fs::path p = fs::temp_directory_path() / "evw_words.txt";
+    {
+        std::ofstream o(p);
+        o << "prop_tree_01\r\nv_ilev_door\n\nmichael\n";
+    }
+    size_t added = JenkIndex::LoadStringsFromFile(p.string());
+    check(added == 3, "3 non-empty lines indexed");
+    check(JenkIndex::GetString(JenkHash::GenHash(std::string_view("michael"))) == "michael",
+          "loaded word resolvable");
+    std::error_code ec; fs::remove(p, ec);
+    check(JenkIndex::LoadStringsFromFile("nonexistent_file_xyz.txt") == 0, "missing file -> 0");
+}
+
+static void testRenderBounds()
+{
+    std::printf("[render] computeBounds over model meshes\n");
+    using namespace evw::app;
+    RenderModel rm;
+    RenderMesh m;
+    m.positions = { {0,0,0}, {2,4,6}, {-2,0,0} };
+    rm.meshes.push_back(m);
+    auto b = computeBounds(rm);
+    check(b.valid, "bounds valid");
+    check(b.min.X == -2.0f && b.max.Y == 4.0f && b.max.Z == 6.0f, "bounds extents");
+    check(b.center.X == 0.0f && b.center.Y == 2.0f && b.center.Z == 3.0f, "bounds center");
+    check(b.radius > 0.0f, "bounds radius positive");
+
+    RenderModel empty;
+    check(!computeBounds(empty).valid, "empty model -> invalid bounds");
+}
+
+static void testTextureDecodeExtra()
+{
+    std::printf("[dxt] L8 / A1R5G5B5 / BC4 decode + format names\n");
+    using namespace evw::gamefiles;
+
+    check(std::string(textureFormatName(TextureFormat::D3DFMT_DXT5)) == "DXT5", "format name DXT5");
+    check(std::string(textureFormatName(TextureFormat::D3DFMT_L8)) == "L8", "format name L8");
+
+    // L8 2x2 -> grayscale RGBA.
+    Texture t;
+    t.width = 2; t.height = 2; t.format = TextureFormat::D3DFMT_L8;
+    t.data = std::make_shared<TextureData>();
+    t.data->fullData = {10, 20, 30, 40};
+    auto rgba = evw::texconv::decodeToRGBA(t);
+    check(rgba.size() == 16, "L8 decoded size");
+    check(rgba[0] == 10 && rgba[1] == 10 && rgba[2] == 10 && rgba[3] == 255, "L8 pixel0 grayscale");
+    check(rgba[4] == 20, "L8 pixel1");
+
+    // BC4 single block (4x4), constant value 0x80 via v0==v1 path.
+    std::vector<uint8_t> blk(8, 0);
+    blk[0] = 0x80; blk[1] = 0x80; // v0==v1 -> all selectors map to 0x80
+    auto g = evw::texconv::decompressBC4(blk, 4, 4);
+    check(g.size() == 64, "BC4 decoded size");
+    check(g[0] == 0x80 && g[3] == 255, "BC4 grayscale value + opaque alpha");
+}
+
+static void testHeightmapPgm()
+{
+    std::printf("[hmap] PGM export of max-height grid\n");
+    using namespace evw::gamefiles;
+    HeightmapFile h;
+    h.width = 2; h.height = 2;
+    h.maxHeights = {10, 20, 30, 40};
+    std::string pgm = h.toPGM();
+    check(pgm.find("P2\n2 2\n255\n") != std::string::npos, "PGM header");
+    check(pgm.find("10 20") != std::string::npos, "first row values");
+    check(pgm.find("30 40") != std::string::npos, "second row values");
+
+    h.minHeights = {1, 2, 3, 4};
+    std::string pgmMin = h.toPGMMin();
+    check(pgmMin.find("1 2") != std::string::npos && pgmMin.find("3 4") != std::string::npos,
+          "min-height PGM values");
+}
+
+static void testMetaXml()
+{
+    std::printf("[metaxml] Meta -> XML (typed fields + hash names)\n");
+    using namespace evw::gamefiles;
+
+    JenkIndex::Clear();
+    JenkIndex::Ensure("CTestStruct");
+    JenkIndex::Ensure("myInt");
+    JenkIndex::Ensure("myFloat");
+    JenkIndex::Ensure("myHash");
+    JenkIndex::Ensure("myVec");
+    uint32_t structHash = JenkHash::GenHash(std::string_view("CTestStruct"));
+
+    Meta meta;
+    meta.rootBlockIndex = 1;
+    MetaStructureInfo si;
+    si.structureNameHash = structHash;
+    si.structureSize = 28;
+    auto mkEntry = [](const char* name, int32_t off, uint8_t type) {
+        MetaStructureEntryInfo_s e{};
+        e.entryNameHash = JenkHash::GenHash(std::string_view(name));
+        e.dataOffset = off;
+        e.dataType = type;
+        e.referenceTypeIndex = -1;
+        return e;
+    };
+    si.entries.push_back(mkEntry("myInt", 0, 0x15));   // UnsignedInt
+    si.entries.push_back(mkEntry("myFloat", 4, 0x21)); // Float
+    si.entries.push_back(mkEntry("myHash", 8, 0x4A));  // Hash
+    si.entries.push_back(mkEntry("myVec", 12, 0x33));  // Float_XYZ
+    meta.structureInfos.data.push_back(si);
+
+    MetaDataBlock blk;
+    blk.structureNameHash = structHash;
+    blk.data.resize(28, 0);
+    uint32_t iv = 42; std::memcpy(blk.data.data() + 0, &iv, 4);
+    float fv = 1.5f; std::memcpy(blk.data.data() + 4, &fv, 4);
+    std::memcpy(blk.data.data() + 8, &structHash, 4); // hash field -> resolves to "CTestStruct"
+    float vx = 1.0f, vy = 2.0f, vz = 3.0f;
+    std::memcpy(blk.data.data() + 12, &vx, 4);
+    std::memcpy(blk.data.data() + 16, &vy, 4);
+    std::memcpy(blk.data.data() + 20, &vz, 4);
+    blk.dataLength = 28;
+    meta.dataBlocks.data.push_back(blk);
+
+    std::string xml = metaToXml(meta);
+    auto has = [&](const char* s) { return xml.find(s) != std::string::npos; };
+    check(has("<CTestStruct>"), "root tag uses resolved struct name");
+    check(has("<myInt value=\"42\""), "uint field serialized");
+    check(has("<myFloat value=\"1.5\""), "float field serialized");
+    check(has("<myHash>CTestStruct</myHash>"), "hash field resolves to name");
+    check(has("<myVec x=\"1\" y=\"2\" z=\"3\""), "float3 field serialized");
+}
+
+static void testPsoXml()
+{
+    std::printf("[psoxml] PSO -> XML (schema-driven fields)\n");
+    using namespace evw::gamefiles;
+
+    JenkIndex::Clear();
+    JenkIndex::Ensure("CPsoTest");
+    JenkIndex::Ensure("fieldA");
+    JenkIndex::Ensure("fieldB");
+    uint32_t structHash = JenkHash::GenHash(std::string_view("CPsoTest"));
+
+    DataWriter dw(Endianess::BigEndian);
+    // PSIN: header(8) + payload(8): uint32=7 at 0, float=2.5 at 4
+    uint32_t fb; float f = 2.5f; std::memcpy(&fb, &f, 4);
+    dw.Write(static_cast<uint32_t>(0x5053494E)); dw.Write(static_cast<uint32_t>(16));
+    dw.Write(static_cast<uint32_t>(7)); dw.Write(fb);
+    // PMAP: rootId=1, 1 entry
+    dw.Write(static_cast<uint32_t>(0x504D4150)); dw.Write(static_cast<uint32_t>(8 + 8 + 16));
+    dw.Write(static_cast<int32_t>(1));            // rootId
+    dw.Write(static_cast<int16_t>(1));            // entriesCount
+    dw.Write(static_cast<int16_t>(0));
+    dw.Write(structHash);                          // entry nameHash
+    dw.Write(static_cast<int32_t>(0));            // offset
+    dw.Write(static_cast<int32_t>(0));            // unknown8
+    dw.Write(static_cast<int32_t>(8));            // length
+    // PSCH: count=1, index(8), structure(36)
+    dw.Write(static_cast<uint32_t>(0x50534348)); dw.Write(static_cast<uint32_t>(8 + 4 + 8 + 36));
+    dw.Write(static_cast<uint32_t>(1));           // count
+    dw.Write(structHash);                          // index nameHash
+    dw.Write(static_cast<int32_t>(20));           // index offset
+    // structure at 20
+    dw.Write(static_cast<uint32_t>((0u << 24) | 2u)); // type=0, entriesCount=2
+    dw.Write(static_cast<int32_t>(8));            // structureLength
+    dw.Write(static_cast<uint32_t>(0));           // Unk_Ch
+    // entry 0: fieldA, UInt(0x06), offset 0
+    dw.Write(JenkHash::GenHash(std::string_view("fieldA")));
+    dw.Write(static_cast<uint8_t>(0x06)); dw.Write(static_cast<uint8_t>(0));
+    dw.Write(static_cast<uint16_t>(0)); dw.Write(static_cast<uint32_t>(0));
+    // entry 1: fieldB, Float(0x07), offset 4
+    dw.Write(JenkHash::GenHash(std::string_view("fieldB")));
+    dw.Write(static_cast<uint8_t>(0x07)); dw.Write(static_cast<uint8_t>(0));
+    dw.Write(static_cast<uint16_t>(4)); dw.Write(static_cast<uint32_t>(0));
+
+    PsoFile pso;
+    check(pso.load(dw.buffer()), "PSO loads");
+    check(pso.schema().size() == 1, "schema has 1 structure");
+    std::string xml = psoToXml(pso);
+    auto has = [&](const char* s) { return xml.find(s) != std::string::npos; };
+    check(has("<CPsoTest>"), "root tag uses resolved struct name");
+    check(has("<fieldA value=\"7\""), "uint field serialized");
+    check(has("<fieldB value=\"2.5\""), "float field serialized");
+}
+
 int main()
 {
     std::printf("EvelentWalker C++ port self-tests\n");
@@ -2085,6 +2730,9 @@ int main()
     testInflate();
     testDotNetRandom();
     testMagicBlobUnpack();
+    testSha1();
+    testHashSearch();
+    testKeysFolder();
     testRpfParse();
     testRpfFlags();
     testRpfManager();
@@ -2129,6 +2777,21 @@ int main()
     testPsoTypedRead();
     testJenkEnsureAll();
     testMrfGameFileType();
+    testDistantLights();
+    testWatermap();
+    testCacheDat();
+    testGtxd();
+    testPsoEnumSchema();
+    testMetaXml();
+    testPsoXml();
+    testPsoXmlNested();
+    testDictionaries();
+    testYpdb();
+    testFxc();
+    testJenkLoadFile();
+    testRenderBounds();
+    testTextureDecodeExtra();
+    testHeightmapPgm();
 
     std::printf("\n%d/%d checks passed\n", g_checks - g_failures, g_checks);
     if (g_failures != 0)

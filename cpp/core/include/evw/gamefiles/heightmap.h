@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include "evw/math/math.h"
@@ -29,5 +30,10 @@ namespace evw::gamefiles
         math::Vector3 bbMax;
         std::vector<uint8_t> maxHeights;
         std::vector<uint8_t> minHeights;
+
+        // Exports the max-height grid as an ASCII PGM (P2) image string.
+        std::string toPGM() const;
+        // Exports the min-height grid as an ASCII PGM (P2) image string.
+        std::string toPGMMin() const;
     };
 }

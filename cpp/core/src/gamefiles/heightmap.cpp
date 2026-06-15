@@ -68,3 +68,45 @@ namespace evw::gamefiles
         return true;
     }
 }
+
+namespace evw::gamefiles
+{
+    std::string HeightmapFile::toPGM() const
+    {
+        // ASCII PGM (P2) of the max-height grid, 0..255 grayscale.
+        std::string out;
+        out.reserve(static_cast<size_t>(width) * height * 4 + 32);
+        out += "P2\n";
+        out += std::to_string(width) + " " + std::to_string(height) + "\n255\n";
+        for (uint16_t y = 0; y < height; ++y)
+        {
+            for (uint16_t x = 0; x < width; ++x)
+            {
+                size_t idx = static_cast<size_t>(y) * width + x;
+                uint8_t v = idx < maxHeights.size() ? maxHeights[idx] : 0;
+                out += std::to_string(static_cast<int>(v));
+                out.push_back(x + 1 < width ? ' ' : '\n');
+            }
+        }
+        return out;
+    }
+
+    std::string HeightmapFile::toPGMMin() const
+    {
+        std::string out;
+        out.reserve(static_cast<size_t>(width) * height * 4 + 32);
+        out += "P2\n";
+        out += std::to_string(width) + " " + std::to_string(height) + "\n255\n";
+        for (uint16_t y = 0; y < height; ++y)
+        {
+            for (uint16_t x = 0; x < width; ++x)
+            {
+                size_t idx = static_cast<size_t>(y) * width + x;
+                uint8_t v = idx < minHeights.size() ? minHeights[idx] : 0;
+                out += std::to_string(static_cast<int>(v));
+                out.push_back(x + 1 < width ? ' ' : '\n');
+            }
+        }
+        return out;
+    }
+}

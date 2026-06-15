@@ -20,6 +20,8 @@ namespace evw::gamefiles
         loaded_ = false;
         entries_.clear();
         dataSection_.clear();
+        schema_.clear();
+        enums_.clear();
         rootId_ = 0;
         if (!isPSO(data)) return false;
 
@@ -103,7 +105,22 @@ namespace evw::gamefiles
                         }
                         schema_.push_back(std::move(s));
                     }
-                    // type == 1 (enum) not captured yet
+                    else if (type == 1) // enum
+                    {
+                        uint32_t x = sr.ReadUInt32();
+                        int32_t entriesCount = static_cast<int32_t>(x & 0x00FFFFFF);
+                        PsoSchemaEnum en;
+                        en.nameHash = idx[i].nameHash;
+                        en.entries.resize(entriesCount > 0 ? entriesCount : 0);
+                        for (int j = 0; j < entriesCount; ++j)
+                        {
+                            PsoSchemaEnumEntry e;
+                            e.entryNameHash = sr.ReadUInt32();
+                            e.entryKey = sr.ReadInt32();
+                            en.entries[j] = e;
+                        }
+                        enums_.push_back(std::move(en));
+                    }
                 }
                 break;
             }
@@ -127,6 +144,13 @@ namespace evw::gamefiles
     {
         for (const auto& s : schema_)
             if (s.nameHash == nameHash) return &s;
+        return nullptr;
+    }
+
+    const PsoSchemaEnum* PsoFile::findEnum(uint32_t nameHash) const
+    {
+        for (const auto& e : enums_)
+            if (e.nameHash == nameHash) return &e;
         return nullptr;
     }
 

@@ -35,6 +35,7 @@ namespace evw::gamefiles
         if (e == "ypt") return GameFileType::Ypt;
         if (e == "ynv") return GameFileType::Ynv;
         if (e == "ynd") return GameFileType::Ynd;
+        if (e == "ypdb") return GameFileType::Ypdb;
         if (e == "yvr") return GameFileType::Yvr;
         if (e == "ywr") return GameFileType::Ywr;
         if (e == "yfd") return GameFileType::Yfd;
@@ -74,6 +75,7 @@ namespace evw::gamefiles
         case GameFileType::Ypt: return "Particle Effects (YPT)";
         case GameFileType::Ynv: return "Nav Mesh (YNV)";
         case GameFileType::Ynd: return "Path Nodes (YND)";
+        case GameFileType::Ypdb: return "Pose Matcher DB (YPDB)";
         case GameFileType::Yvr: return "Vehicle Record (YVR)";
         case GameFileType::Ywr: return "Waypoint Record (YWR)";
         case GameFileType::Yfd: return "Frame Filter Dictionary (YFD)";
@@ -88,6 +90,9 @@ namespace evw::gamefiles
         case GameFileType::Fxc: return "Shaders (FXC)";
         case GameFileType::Cut: return "Cutscene (CUT)";
         case GameFileType::Mrf: return "Move Network (MRF)";
+        case GameFileType::Gtxd: return "TXD Parent Mapping (GTXD)";
+        case GameFileType::DistantLights: return "Distant Lights";
+        case GameFileType::Watermap: return "Water Map (WMAP)";
         case GameFileType::Heightmap: return "Heightmap (DAT)";
         case GameFileType::Dds: return "DDS Texture";
         case GameFileType::Xml: return "XML";

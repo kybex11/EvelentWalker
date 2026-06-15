@@ -38,6 +38,9 @@ namespace evw::gamefiles
         // Ensures every string in the list is indexed; returns the number of
         // newly added entries.
         static size_t EnsureAll(const std::vector<std::string>& strings);
+        // Loads a newline-separated wordlist file and indexes each line.
+        // Returns the number of newly added entries (0 if the file can't be read).
+        static size_t LoadStringsFromFile(const std::string& path);
         // Returns the string, or the decimal representation of the hash if unknown.
         static std::string GetString(uint32_t hash);
         // Returns the string, or an empty string if unknown.

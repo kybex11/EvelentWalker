@@ -47,6 +47,20 @@ namespace evw::gamefiles
         std::vector<PsoSchemaEntry> entries;
     };
 
+    // An entry within a PSO enum definition.
+    struct PsoSchemaEnumEntry
+    {
+        uint32_t entryNameHash = 0;
+        int32_t entryKey = 0;
+    };
+
+    // An enum definition in the PSO schema (PSCH).
+    struct PsoSchemaEnum
+    {
+        uint32_t nameHash = 0;
+        std::vector<PsoSchemaEnumEntry> entries;
+    };
+
     class PsoFile
     {
     public:
@@ -60,12 +74,16 @@ namespace evw::gamefiles
         const std::vector<uint8_t>& dataSection() const { return dataSection_; }
         const std::vector<PsoDataMappingEntry>& entries() const { return entries_; }
         const std::vector<PsoSchemaStructure>& schema() const { return schema_; }
+        const std::vector<PsoSchemaEnum>& enums() const { return enums_; }
 
         // Returns the data-map entry for a 1-based block id, or nullptr.
         const PsoDataMappingEntry* getBlock(int id) const;
 
         // Finds a schema structure by its name hash, or nullptr.
         const PsoSchemaStructure* findSchema(uint32_t nameHash) const;
+
+        // Finds a schema enum by its name hash, or nullptr.
+        const PsoSchemaEnum* findEnum(uint32_t nameHash) const;
 
         // ---- Typed value access into the data (PSIN) section ----
         // All reads are big-endian, matching the on-disk PSO layout. `offset` is
@@ -97,5 +115,6 @@ namespace evw::gamefiles
         std::vector<uint8_t> dataSection_;
         std::vector<PsoDataMappingEntry> entries_;
         std::vector<PsoSchemaStructure> schema_;
+        std::vector<PsoSchemaEnum> enums_;
     };
 }

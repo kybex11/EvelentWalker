@@ -15,6 +15,7 @@ namespace evw::app
         std::vector<math::Vector3> positions;
         std::vector<math::Vector3> normals;
         std::vector<math::Vector2> texCoords;
+        std::vector<uint32_t> colors;       // packed RGBA8 per vertex (may be empty)
         std::vector<uint16_t> indices;
         uint16_t shaderId = 0;
         int diffuseTexture = -1;   // index into RenderModel::textures, or -1
@@ -39,6 +40,19 @@ namespace evw::app
         std::vector<RenderMesh> meshes;
         std::vector<RenderTexture> textures;
     };
+
+    // Overall axis-aligned bounds of a model (across all meshes), plus the
+    // bounding-sphere center/radius useful for framing a camera.
+    struct ModelBounds
+    {
+        math::Vector3 min;
+        math::Vector3 max;
+        math::Vector3 center;
+        float radius = 0.0f;
+        bool valid = false;
+    };
+
+    ModelBounds computeBounds(const RenderModel& model);
 
     // Extracts all geometry meshes from a drawable (all LOD models, all geometries).
     std::vector<RenderMesh> buildMeshes(const gamefiles::DrawableBase& drawable);
